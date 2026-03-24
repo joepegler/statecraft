@@ -1,35 +1,436 @@
 ---
-title: Statecraft
-description: Ethereum integration testing for Vitest and viem—Anvil runtimes, pinned forks, funded wallets, and composable scenario fixtures without repeated setup code.
+layout: landing
+title: Deterministic Ethereum integration testing for Vitest & viem
+description: Compose Anvil-style runtimes, pinned mainnet forks, funded wallets, and contract setup with explicit scenario steps—so TypeScript EVM tests stay fast, typed, and reproducible without per-file boilerplate.
+content:
+  width: min(72rem, 100%)
+  horizontalPadding: 28px
+  verticalPadding: 0px
 ---
 
-# Statecraft
+import { HomePage, Callout, Button } from "vocs/components";
 
-Composable scenario runtime for Ethereum integration tests in Vitest, built on viem and local Anvil runtimes.
+export const base = import.meta.env.BASE_URL;
 
-## Who it is for
+<div
+  style={{
+    position: "relative",
+    marginLeft: "calc(-1 * var(--vocs-content_horizontalPadding, 28px))",
+    marginRight: "calc(-1 * var(--vocs-content_horizontalPadding, 28px))",
+    padding:
+      "clamp(2.5rem, 6vw, 4.5rem) var(--vocs-content_horizontalPadding, 28px) clamp(2rem, 4vw, 3rem)",
+    background:
+      "radial-gradient(ellipse 80% 60% at 70% -10%, rgba(56, 189, 248, 0.18), transparent 55%), var(--vocs-color_background)",
+    borderBottom: "1px solid var(--vocs-color_border)",
+    overflow: "hidden",
+  }}
+>
+  <img
+    src={`${base}landing-grid.svg`}
+    alt=""
+    aria-hidden
+    style={{
+      position: "absolute",
+      inset: 0,
+      width: "100%",
+      height: "100%",
+      objectFit: "cover",
+      opacity: 0.55,
+      pointerEvents: "none",
+    }}
+  />
+  <div style={{ position: "relative", zIndex: 1, maxWidth: "52rem", margin: "0 auto" }}>
+    <HomePage.Root>
+      <HomePage.Logo />
+      <HomePage.Tagline>
+        <h1
+          style={{
+            margin: 0,
+            font: "inherit",
+            fontWeight: 700,
+            letterSpacing: "-0.02em",
+            lineHeight: 1.15,
+          }}
+        >
+          Deterministic Ethereum integration tests—without the setup soup.
+        </h1>
+      </HomePage.Tagline>
+      <HomePage.Description>
+        Statecraft is a composable scenario runtime for <strong>Vitest</strong> and{" "}
+        <strong>viem</strong>: pin forks, fund wallets, inject bytecode or deploy for real, and wire
+        clients in <strong>explicit, ordered steps</strong>—so your test bodies stay about behavior,
+        not bootstrapping Anvil again and again.
+      </HomePage.Description>
+      <HomePage.Buttons>
+        <HomePage.Button href="/quickstart" variant="accent">
+          Quickstart
+        </HomePage.Button>
+        <HomePage.Button href="/core-concepts">Core concepts</HomePage.Button>
+        <Button variant="accent" href="https://github.com/your-org/statecraft">
+          GitHub
+        </Button>
+      </HomePage.Buttons>
+    </HomePage.Root>
+  </div>
+</div>
 
-Statecraft fits TypeScript teams that want deterministic EVM tests: pinned forks (`rpcUrl` + `blockNumber`), reproducible balances, and explicit setup—without copy-pasting chain bootstrapping into every test file.
+<div style={{ padding: "clamp(2.5rem, 5vw, 4rem) 0" }}>
+  <div
+    style={{
+      display: "grid",
+      gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+      gap: "1.5rem",
+      alignItems: "start",
+    }}
+  >
+    <div>
+      <h2
+        style={{
+          margin: "0 0 0.75rem",
+          fontSize: "1.35rem",
+          fontWeight: 700,
+          color: "var(--vocs-color_title)",
+        }}
+      >
+        Before: implicit globals &amp; copy-paste chain code
+      </h2>
+      <ul
+        style={{
+          margin: 0,
+          paddingLeft: "1.15rem",
+          color: "var(--vocs-color_text2)",
+          lineHeight: 1.6,
+        }}
+      >
+        <li>One-off local chain / fork wiring in every test file.</li>
+        <li>Ad hoc wallet funding and client factories.</li>
+        <li>Flaky suites that depend on hidden global setup.</li>
+      </ul>
+    </div>
+    <div>
+      <h2
+        style={{
+          margin: "0 0 0.75rem",
+          fontSize: "1.35rem",
+          fontWeight: 700,
+          color: "var(--vocs-color_title)",
+        }}
+      >
+        After: named fixtures &amp; typed context
+      </h2>
+      <ul
+        style={{
+          margin: 0,
+          paddingLeft: "1.15rem",
+          color: "var(--vocs-color_text2)",
+          lineHeight: 1.6,
+        }}
+      >
+        <li>
+          Compose <code>withChain</code>, <code>withFork</code>, <code>withFundedWallet</code>, and
+          more as middleware-style steps.
+        </li>
+        <li>
+          Accumulate <strong>typed</strong> <code>publicClient</code>, <code>walletClient</code>,{" "}
+          <code>testClient</code>, wallets, and deployments on the scenario context.
+        </li>
+        <li>
+          Keep fork tests honest: <code>rpcUrl</code> + a required <code>blockNumber</code> for
+          reproducibility.
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>
 
-## Problems it avoids
+<div
+  style={{
+    padding: "2rem 0 3rem",
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "2rem",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderTop: "1px solid var(--vocs-color_border)",
+    borderBottom: "1px solid var(--vocs-color_border)",
+  }}
+>
+  <div style={{ flex: "1 1 280px", maxWidth: "32rem" }}>
+    <h2
+      style={{
+        margin: "0 0 0.5rem",
+        fontSize: "1.25rem",
+        fontWeight: 700,
+        color: "var(--vocs-color_title)",
+      }}
+    >
+      Compose scenarios, not config files
+    </h2>
+    <p style={{ margin: 0, color: "var(--vocs-color_text2)", lineHeight: 1.65 }}>
+      Each step receives context, extends it, and calls <code>next(updatedCtx)</code> once—clear
+      ordering, predictable lifecycle, and tests that read like the product behavior you care about.
+    </p>
+  </div>
+  <div style={{ flex: "1 1 280px", display: "flex", justifyContent: "center" }}>
+    <img
+      src={`${base}landing-scenario-flow.svg`}
+      alt="Diagram: scenario composes withFork, withFundedWallet, then test"
+      width={520}
+      height={200}
+      style={{ maxWidth: "100%", height: "auto" }}
+    />
+  </div>
+</div>
 
-- One-off local chain / fork wiring in each test.
-- Ad hoc wallet funding and RPC client creation.
-- Brittle test suites that depend on implicit global setup instead of named fixtures.
+<div style={{ padding: "clamp(2.5rem, 5vw, 3.5rem) 0 1rem" }}>
+  <h2
+    style={{
+      margin: "0 0 1.25rem",
+      fontSize: "1.35rem",
+      fontWeight: 700,
+      color: "var(--vocs-color_title)",
+    }}
+  >
+    Four ways to set chain state—pick the right speed
+  </h2>
+  <div
+    style={{
+      display: "grid",
+      gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+      gap: "1rem",
+    }}
+  >
+    <div
+      style={{
+        borderRadius: "12px",
+        border: "1px solid var(--vocs-color_border)",
+        background: "var(--vocs-color_background2)",
+        padding: "1.15rem 1.2rem",
+        display: "flex",
+        gap: "0.85rem",
+        alignItems: "flex-start",
+      }}
+    >
+      <img src={`${base}vendor/heroicons-bolt.svg`} alt="" width={24} height={24} style={{ flexShrink: 0 }} />
+      <div>
+        <div
+          style={{
+            fontFamily: "var(--vocs-fontFamily_mono)",
+            fontSize: "0.9rem",
+            fontWeight: 600,
+            color: "var(--vocs-color_textAccent)",
+            marginBottom: "0.35rem",
+          }}
+        >
+          withChain
+        </div>
+        <p style={{ margin: 0, fontSize: "0.92rem", color: "var(--vocs-color_text2)", lineHeight: 1.55 }}>
+          Spin up a fresh local Anvil-style runtime when you need isolation and a blank slate.
+        </p>
+      </div>
+    </div>
+    <div
+      style={{
+        borderRadius: "12px",
+        border: "1px solid var(--vocs-color_border)",
+        background: "var(--vocs-color_background2)",
+        padding: "1.15rem 1.2rem",
+        display: "flex",
+        gap: "0.85rem",
+        alignItems: "flex-start",
+      }}
+    >
+      <img src={`${base}vendor/heroicons-arrow-path.svg`} alt="" width={24} height={24} style={{ flexShrink: 0 }} />
+      <div>
+        <div
+          style={{
+            fontFamily: "var(--vocs-fontFamily_mono)",
+            fontSize: "0.9rem",
+            fontWeight: 600,
+            color: "var(--vocs-color_textAccent)",
+            marginBottom: "0.35rem",
+          }}
+        >
+          withFork
+        </div>
+        <p style={{ margin: 0, fontSize: "0.92rem", color: "var(--vocs-color_text2)", lineHeight: 1.55 }}>
+          Fork mainnet (or any JSON-RPC) with a pinned block height for deterministic integration tests.
+        </p>
+      </div>
+    </div>
+    <div
+      style={{
+        borderRadius: "12px",
+        border: "1px solid var(--vocs-color_border)",
+        background: "var(--vocs-color_background2)",
+        padding: "1.15rem 1.2rem",
+        display: "flex",
+        gap: "0.85rem",
+        alignItems: "flex-start",
+      }}
+    >
+      <img src={`${base}vendor/heroicons-cube-transparent.svg`} alt="" width={24} height={24} style={{ flexShrink: 0 }} />
+      <div>
+        <div
+          style={{
+            fontFamily: "var(--vocs-fontFamily_mono)",
+            fontSize: "0.9rem",
+            fontWeight: 600,
+            color: "var(--vocs-color_textAccent)",
+            marginBottom: "0.35rem",
+          }}
+        >
+          withContracts
+        </div>
+        <p style={{ margin: 0, fontSize: "0.92rem", color: "var(--vocs-color_text2)", lineHeight: 1.55 }}>
+          Inject runtime bytecode at known addresses—fast setup without running constructors.
+        </p>
+      </div>
+    </div>
+    <div
+      style={{
+        borderRadius: "12px",
+        border: "1px solid var(--vocs-color_border)",
+        background: "var(--vocs-color_background2)",
+        padding: "1.15rem 1.2rem",
+        display: "flex",
+        gap: "0.85rem",
+        alignItems: "flex-start",
+      }}
+    >
+      <img src={`${base}vendor/heroicons-queue-list.svg`} alt="" width={24} height={24} style={{ flexShrink: 0 }} />
+      <div>
+        <div
+          style={{
+            fontFamily: "var(--vocs-fontFamily_mono)",
+            fontSize: "0.9rem",
+            fontWeight: 600,
+            color: "var(--vocs-color_textAccent)",
+            marginBottom: "0.35rem",
+          }}
+        >
+          withDeployments
+        </div>
+        <p style={{ margin: 0, fontSize: "0.92rem", color: "var(--vocs-color_text2)", lineHeight: 1.55 }}>
+          Deploy with real creation bytecode and constructor semantics when you need the full path.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
 
-## What you get instead
+<div style={{ padding: "1rem 0 0.5rem" }}>
+  <h2
+    style={{
+      margin: "0 0 1rem",
+      fontSize: "1.35rem",
+      fontWeight: 700,
+      color: "var(--vocs-color_title)",
+    }}
+  >
+    Proof in a handful of lines
+  </h2>
+  <p style={{ margin: "0 0 1rem", color: "var(--vocs-color_text2)", lineHeight: 1.6 }}>
+    The same pattern you will find in <code>packages/examples/examples/scenarios.test.ts</code> and the{" "}
+    <a href="/quickstart">Quickstart</a>: fork, fund, assert.
+  </p>
+</div>
 
-You compose scenario steps (`withChain`, `withFork`, `withFundedWallet`, `withContracts`, `withDeployments`, …) that attach typed context; the test body stays focused on behavior and assertions. See [Core concepts](/core-concepts) for how steps chain together.
+```ts
+import { test, expect } from "vitest";
+import { parseEther } from "viem";
+import { scenario, withFork, withFundedWallet } from "@statecraft/vitest";
 
-## Package layout
+test(
+  "funded wallet on mainnet fork",
+  scenario(
+    withFork({
+      rpcUrl: process.env.MAINNET_RPC_URL!,
+      blockNumber: 22_000_000n,
+    }),
+    withFundedWallet({ balance: parseEther("1") }),
+    async ({ wallet, publicClient }) => {
+      const balance = await publicClient!.getBalance({ address: wallet! });
+      expect(balance).toBe(parseEther("1"));
+    },
+  ),
+);
+```
 
-- `packages/runtime`: runtime lifecycle (start/stop local chain or fork)
-- `packages/clients`: viem `publicClient`, `walletClient`, `testClient` creation
-- `packages/scenarios`: scenario engine and `withX` fixtures
-- `packages/vitest`: ergonomic Vitest-facing exports
-- `packages/examples`: runnable demonstrations
+<div style={{ padding: "0 0 2.5rem" }} />
 
-## Next steps
+<div
+  style={{
+    padding: "2rem",
+    borderRadius: "14px",
+    border: "1px solid var(--vocs-color_borderAccent)",
+    background: "var(--vocs-color_backgroundBlueTint)",
+    marginBottom: "2.5rem",
+  }}
+>
+  <h2
+    style={{
+      margin: "0 0 0.75rem",
+      fontSize: "1.2rem",
+      fontWeight: 700,
+      color: "var(--vocs-color_title)",
+    }}
+  >
+    Built for reliability, not magic
+  </h2>
+  <ul
+    style={{
+      margin: 0,
+      paddingLeft: "1.15rem",
+      color: "var(--vocs-color_text2)",
+      lineHeight: 1.65,
+    }}
+  >
+    <li>
+      <strong>Pinned forks</strong> — tests target a specific <code>blockNumber</code>, not “whatever
+      mainnet looks like today.”
+    </li>
+    <li>
+      <strong>Explicit runtimes</strong> — chain and fork fixtures start runtimes and clean up in{" "}
+      <code>finally</code> so failures do not leak processes.
+    </li>
+    <li>
+      <strong>Optional isolation</strong> — snapshot/revert style helpers when you want tighter
+      boundaries between assertions.
+    </li>
+  </ul>
+</div>
 
-- [Quickstart](/quickstart): install, run tests, and ship your first fork scenario.
-- [Core concepts](/core-concepts): fixture composition, runtimes, and scope.
+<Callout type="info" className="">
+  Statecraft is intentionally focused on <strong>TypeScript + Vitest + viem</strong> EVM testing
+  workflows. It is <strong>not a replacement for Foundry or Hardhat</strong>—use those where they
+  shine, and use Statecraft to keep integration tests in your TS test runner composable and explicit.
+</Callout>
+
+<div
+  style={{
+    textAlign: "center",
+    padding: "clamp(2.5rem, 6vw, 4rem) 0 3rem",
+  }}
+>
+  <h2
+    style={{
+      margin: "0 0 0.75rem",
+      fontSize: "1.35rem",
+      fontWeight: 700,
+      color: "var(--vocs-color_title)",
+    }}
+  >
+    Ship scenarios your team can reuse
+  </h2>
+  <p style={{ margin: "0 auto 1.25rem", maxWidth: "40rem", color: "var(--vocs-color_text2)", lineHeight: 1.65 }}>
+    Install from the monorepo workspace, run <code>bun test</code>, and promote the same fixtures from
+    examples into your product suite—bounded packages, clear dependency direction, Vitest-native ergonomics.
+  </p>
+  <HomePage.Buttons>
+    <HomePage.Button href="/quickstart" variant="accent">
+      Get started
+    </HomePage.Button>
+    <HomePage.Button href="/core-concepts">How composition works</HomePage.Button>
+  </HomePage.Buttons>
+</div>
