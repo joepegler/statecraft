@@ -2,19 +2,29 @@ import { createServer } from "node:net";
 import { randomUUID } from "node:crypto";
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 
+/** How anvil is started: empty chain or fork from a remote RPC. */
 export type RuntimeMode = "chain" | "fork";
 
+/** Input to {@link createRuntime} / {@link startRuntime}; `rpcUrl` and `blockNumber` are required when `mode` is `"fork"`. */
 export type RuntimeConfig = {
   mode: RuntimeMode;
+  /** Remote HTTP RPC when forking; omit for `"chain"` mode. */
   rpcUrl?: string;
+  /** Fork block pin; required for `"fork"` in this version. */
   blockNumber?: bigint;
+  /** Forwarded to anvil `--chain-id` when set. */
   chainId?: number;
+  /** Correlation id; assigned by {@link createRuntime} when omitted. */
   key?: string;
 };
 
+/** Live process handle: JSON-RPC URL and idempotent shutdown. */
 export type RuntimeHandle = {
+  /** Same as `RuntimeConfig.key` after normalization. */
   key: string;
+  /** Base URL of the anvil HTTP server (e.g. `http://127.0.0.1:<port>`). */
   rpcUrl: string;
+  /** Terminates the anvil child process; safe to call multiple times. */
   stop(): Promise<void>;
 };
 
@@ -51,6 +61,10 @@ async function getAvailablePort(): Promise<number> {
   return port;
 }
 
+/**
+ * Validates fork config and ensures `RuntimeConfig.key` (defaults to a new UUID).
+ * Does not start anvil; use {@link startRuntime} for that.
+ */
 export function createRuntime(config: RuntimeConfig): RuntimeConfig {
   if (config.mode === "fork") {
     assertForkConfig(config);
@@ -62,6 +76,9 @@ export function createRuntime(config: RuntimeConfig): RuntimeConfig {
   };
 }
 
+/**
+ * Spawns `anvil` on an ephemeral port, waits until it listens, and returns a {@link RuntimeHandle}.
+ */
 export async function startRuntime(input: RuntimeConfig): Promise<RuntimeHandle> {
   const config = createRuntime(input);
   const port = await getAvailablePort();
@@ -136,6 +153,7 @@ export async function startRuntime(input: RuntimeConfig): Promise<RuntimeHandle>
   return handle;
 }
 
+/** Convenience alias for `handle.stop()`. */
 export async function stopRuntime(handle: RuntimeHandle): Promise<void> {
   await handle.stop();
 }

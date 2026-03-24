@@ -32,12 +32,26 @@ jobs:
       - name: Install Dependencies
         run: bun install --frozen-lockfile
 
-      - name: Set Docs Base Path
+      - name: Set Docs Base Path and public URL
         run: |
-          if [ "${{ github.event.repository.name }}" = "${{ github.repository_owner }}.github.io" ]; then
+          # If docs/public/CNAME exists, GitHub Pages serves the site at the custom apex (BASE_PATH /).
+          CNAME_FILE="docs/public/CNAME"
+          if [ -f "$CNAME_FILE" ]; then
+            DOMAIN=$(tr -d '\r' < "$CNAME_FILE" | sed '/^$/d' | head -n1 | tr -d '[:space:]')
+            if [ -n "$DOMAIN" ]; then
+              echo "BASE_PATH=/" >> "$GITHUB_ENV"
+              echo "DOCS_BASE_URL=https://${DOMAIN}" >> "$GITHUB_ENV"
+              exit 0
+            fi
+          fi
+          OWNER="${{ github.repository_owner }}"
+          REPO="${{ github.event.repository.name }}"
+          if [ "$REPO" = "$OWNER.github.io" ]; then
             echo "BASE_PATH=/" >> "$GITHUB_ENV"
+            echo "DOCS_BASE_URL=https://${OWNER}.github.io" >> "$GITHUB_ENV"
           else
-            echo "BASE_PATH=/${{ github.event.repository.name }}/" >> "$GITHUB_ENV"
+            echo "BASE_PATH=/${REPO}/" >> "$GITHUB_ENV"
+            echo "DOCS_BASE_URL=https://${OWNER}.github.io/${REPO}" >> "$GITHUB_ENV"
           fi
 
       - name: Build Docs

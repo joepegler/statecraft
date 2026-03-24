@@ -1,21 +1,30 @@
 import { getContract, type Hex } from "viem";
-import type { ContractArtifact, ScenarioContracts, ScenarioStep } from "../types";
+import type { AfterSetCodeContext, ContractArtifact, ScenarioContracts, ScenarioStep } from "../types";
 import { extractBytecode, requireRuntimeClients } from "../utils";
 
+/**
+ * Injects bytecode at a fixed address and optionally exposes a viem contract client on context.
+ */
 export type ContractInjection = {
+  /** Artifact supplying ABI and `deployedBytecode` (required for `setCode`). */
   artifact: ContractArtifact;
+  /** Address where runtime bytecode is installed (must match your test/fork expectations). */
   address: Hex;
-  afterSetCode?: (ctx: {
-    name: string;
-    address: Hex;
-    testClient: NonNullable<Parameters<ScenarioStep>[0]["testClient"]>;
-    publicClient: NonNullable<Parameters<ScenarioStep>[0]["publicClient"]>;
-    walletClient: NonNullable<Parameters<ScenarioStep>[0]["walletClient"]>;
-  }) => Promise<void>;
+  /**
+   * Optional hook after bytecode is set (e.g. seed storage); receives the same clients as the scenario.
+   */
+  afterSetCode?: (ctx: AfterSetCodeContext) => Promise<void>;
 };
 
+/**
+ * Map of contract name → injection spec; names become keys on `ctx.contracts`.
+ */
 export type WithContractsConfig = Record<string, ContractInjection>;
 
+/**
+ * Middleware: for each entry, `setCode` at `address`, then merge contract handles into `ctx.contracts`.
+ * Requires a prior `withChain` / `withFork` (runtime + clients).
+ */
 export function withContracts(config: WithContractsConfig): ScenarioStep {
   return async (ctx, next) => {
     requireRuntimeClients(ctx);

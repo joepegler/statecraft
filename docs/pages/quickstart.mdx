@@ -1,3 +1,8 @@
+---
+title: Quickstart
+description: Install Statecraft with Bun, run the examples, and write a Vitest scenario using withFork and withFundedWallet against a pinned mainnet fork.
+---
+
 # Quickstart
 
 Install dependencies and run the existing tests:
@@ -9,7 +14,7 @@ bun test
 
 Create a scenario by composing fixtures with `@statecraft/vitest`:
 
-```ts
+```ts twoslash
 import { test, expect } from "vitest";
 import { parseEther } from "viem";
 import { scenario, withFork, withFundedWallet } from "@statecraft/vitest";
@@ -26,7 +31,9 @@ test(
     }),
     async ({ wallet, publicClient }) => {
       const balance = await publicClient!.getBalance({ address: wallet! });
+      //      ^?
       expect(balance).toBe(parseEther("1"));
+      //    ^?
     },
   ),
 );
@@ -40,3 +47,5 @@ test(
 - forked mainnet + funded wallet + real contract call
 - runtime bytecode injection with `withContracts`
 - real deployment flow with `withDeployments`
+
+When you are ready for how steps compose, read [Core concepts](/core-concepts).

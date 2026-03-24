@@ -1,6 +1,22 @@
 {
   "name": "@statecraft/clients",
   "version": "0.1.0",
+  "description": "Viem publicClient, walletClient, and testClient wiring over Statecraft runtimes.",
+  "keywords": [
+    "ethereum",
+    "viem",
+    "testing",
+    "statecraft"
+  ],
+  "homepage": "https://github.com/your-org/statecraft#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/your-org/statecraft.git",
+    "directory": "packages/clients"
+  },
+  "bugs": {
+    "url": "https://github.com/your-org/statecraft/issues"
+  },
   "type": "module",
   "main": "./src/index.ts",
   "exports": {

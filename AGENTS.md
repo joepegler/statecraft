@@ -17,7 +17,7 @@ Optimize for deterministic tests, explicit fixture composition, and small, revie
 
 ## Repo Shape (Know Your Boundaries)
 
-- `packages/runtime`: anvil/prool runtime lifecycle
+- `packages/runtime`: anvil runtime lifecycle
 - `packages/clients`: viem client wiring over runtime
 - `packages/scenarios`: scenario engine + `withX` fixtures
 - `packages/vitest`: public ergonomic exports for tests
@@ -54,6 +54,28 @@ For tighter loops, run package-scoped scripts:
 - Avoid "magic" defaults that hide test setup details.
 - Prefer named helpers over deeply nested inline logic.
 - Use precise error messages that include actionable context.
+
+## Documentation (TSDoc)
+
+- Types meant for consumers should carry **TSDoc compatible** comments.
+- For exported shapes in `types.ts`, write **TSDoc on the type and on each field** (units, semantics, nullable or optional behavior). Example:
+
+```ts
+/**
+ * Row shape returned by `some_view_mv`.
+ */
+export type SomeRow = {
+  /** Primary key of the row. */
+  some_id: bigint;
+  /** Amount in USD (string because SQL may return `text` / numeric). */
+  amount_usd: string | null;
+  /** Timestamp of last update (UTC). */
+  updated_at: Date | null;
+};
+```
+
+- Do not define reusable `type` / `interface` aliases inside functions (e.g. `type WalletRow = ...` inside a function body). **Move them to that folder’s `types.ts`** and import them. **Exception:** truly one-off, non-exported shapes used once that do not improve readability when lifted.
+- Exported functions and public factory/fixture entrypoints should have a short TSDoc summary (what it does, ordering/deps if non-obvious).
 
 ## Testing Standards
 

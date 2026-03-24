@@ -71,27 +71,3 @@ Run docs locally:
 ```bash
 bun run docs:dev
 ```
-
-Build docs:
-
-```bash
-bun run docs:build
-```
-
-GitHub Pages deploy is configured via `.github/workflows/docs-pages.yml`.
-To publish docs for free on GitHub Pages:
-
-1. Push to the `main` branch.
-2. In GitHub repository settings, set **Pages > Build and deployment > Source** to **GitHub Actions**.
-3. After the workflow succeeds, docs are available at:
-   `https://<your-org-or-user>.github.io/<repo-name>/`
-
-## Current Scope
-
-Statecraft is early and intentionally focused on explicit EVM testing workflows for TypeScript + Vitest + viem. It is not a replacement for Foundry or Hardhat.
-
-## Roadmap (Post-v1)
-
-- ERC-4337 and bundler-aware fixtures
-- paymaster fixtures
-- additional runtime backends

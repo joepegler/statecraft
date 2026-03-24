@@ -1,11 +1,25 @@
+---
+title: Statecraft
+description: Ethereum integration testing for Vitest and viem—Anvil runtimes, pinned forks, funded wallets, and composable scenario fixtures without repeated setup code.
+---
+
 # Statecraft
 
-Composable scenario runtime for Ethereum testing in Vitest.
+Composable scenario runtime for Ethereum integration tests in Vitest, built on viem and local Anvil runtimes.
 
-Statecraft removes repetitive Web3 integration-test boilerplate in TypeScript
-projects. Instead of writing one-off setup for local chains, forks, wallet
-funding, and deployments in every test, you compose explicit fixtures and keep
-test bodies focused on behavior.
+## Who it is for
+
+Statecraft fits TypeScript teams that want deterministic EVM tests: pinned forks (`rpcUrl` + `blockNumber`), reproducible balances, and explicit setup—without copy-pasting chain bootstrapping into every test file.
+
+## Problems it avoids
+
+- One-off local chain / fork wiring in each test.
+- Ad hoc wallet funding and RPC client creation.
+- Brittle test suites that depend on implicit global setup instead of named fixtures.
+
+## What you get instead
+
+You compose scenario steps (`withChain`, `withFork`, `withFundedWallet`, `withContracts`, `withDeployments`, …) that attach typed context; the test body stays focused on behavior and assertions. See [Core concepts](/core-concepts) for how steps chain together.
 
 ## Package layout
 
@@ -17,5 +31,5 @@ test bodies focused on behavior.
 
 ## Next steps
 
-- Read [Quickstart](/quickstart) for the first scenario setup.
-- Review [Core Concepts](/core-concepts) for fixture composition details.
+- [Quickstart](/quickstart): install, run tests, and ship your first fork scenario.
+- [Core concepts](/core-concepts): fixture composition, runtimes, and scope.

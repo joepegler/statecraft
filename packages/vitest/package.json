@@ -1,6 +1,22 @@
 {
   "name": "@statecraft/vitest",
   "version": "0.1.0",
+  "description": "Ergonomic Vitest entrypoints for Statecraft scenarios, forks, and fixtures.",
+  "keywords": [
+    "ethereum",
+    "vitest",
+    "testing",
+    "statecraft"
+  ],
+  "homepage": "https://github.com/your-org/statecraft#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/your-org/statecraft.git",
+    "directory": "packages/vitest"
+  },
+  "bugs": {
+    "url": "https://github.com/your-org/statecraft/issues"
+  },
   "type": "module",
   "main": "./src/index.ts",
   "exports": {

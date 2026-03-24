@@ -9,7 +9,10 @@ export {
 } from "@statecraft/scenarios";
 
 export type {
+  AfterDeployContext,
+  AfterSetCodeContext,
   ContractArtifact,
+  DeploymentArgsResolver,
   DeploymentRecord,
   ScenarioContext,
   ScenarioStep,

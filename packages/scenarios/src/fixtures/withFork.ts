@@ -2,13 +2,23 @@ import { startRuntime, stopRuntime } from "@statecraft/runtime";
 import { createClients } from "@statecraft/clients";
 import type { ScenarioStep } from "../types";
 
+/** Options for an anvil instance forked from a remote JSON-RPC endpoint at a pinned block. */
 export type WithForkConfig = {
+  /** HTTP(S) RPC URL of the chain to fork (passed to anvil `--fork-url`). */
   rpcUrl: string;
+  /**
+   * Block number to pin the fork (`--fork-block-number`); required for deterministic scenarios.
+   */
   blockNumber: bigint;
+  /** Optional anvil `--chain-id` override. */
   chainId?: number;
+  /** Stable id forwarded to `RuntimeConfig.key` on the runtime package. */
   key?: string;
 };
 
+/**
+ * Middleware: starts a forked anvil, wires viem clients, runs `next`, then stops the runtime.
+ */
 export function withFork(config: WithForkConfig): ScenarioStep {
   return async (ctx, next) => {
     if (!config.rpcUrl) {

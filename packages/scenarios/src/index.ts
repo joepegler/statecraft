@@ -7,7 +7,10 @@ export { withContracts } from "./fixtures/withContracts";
 export { withDeployments } from "./fixtures/withDeployments";
 
 export type {
+  AfterDeployContext,
+  AfterSetCodeContext,
   ContractArtifact,
+  DeploymentArgsResolver,
   DeploymentRecord,
   ScenarioContext,
   ScenarioStep,

@@ -3,11 +3,18 @@ import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import type { ScenarioStep } from "../types";
 import { requireRuntimeClients } from "../utils";
 
+/** Options for creating (or reusing) a test account and funding it on anvil. */
 export type WithFundedWalletConfig = {
+  /** Balance set via `testClient.setBalance` (wei). */
   balance: bigint;
+  /** When set, uses this key; otherwise generates a new private key. */
   privateKey?: Hex;
 };
 
+/**
+ * Middleware: ensures a funded account, sets `ctx.wallet`, and replaces `walletClient` with that account.
+ * Requires a prior `withChain` / `withFork` so `testClient` and chain RPC are available.
+ */
 export function withFundedWallet(config: WithFundedWalletConfig): ScenarioStep {
   return async (ctx, next) => {
     requireRuntimeClients(ctx);

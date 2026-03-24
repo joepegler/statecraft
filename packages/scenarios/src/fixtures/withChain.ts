@@ -2,11 +2,17 @@ import { startRuntime, stopRuntime } from "@statecraft/runtime";
 import { createClients } from "@statecraft/clients";
 import type { ScenarioStep } from "../types";
 
+/** Options for starting a fresh chain (non-fork) anvil instance. */
 export type WithChainConfig = {
+  /** Anvil `--chain-id` when set; defaults match runtime/clients package defaults. */
   chainId?: number;
+  /** Stable id forwarded to `RuntimeConfig.key` on the runtime package for correlation across restarts. */
   key?: string;
 };
 
+/**
+ * Middleware: starts an empty-chain anvil, wires viem clients, runs `next`, then stops the runtime.
+ */
 export function withChain(config: WithChainConfig = {}): ScenarioStep {
   return async (ctx, next) => {
     const runtime = await startRuntime({

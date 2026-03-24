@@ -22,6 +22,10 @@ function compose(steps: ScenarioStep[], testFn: ScenarioTest): (ctx: ScenarioCon
   };
 }
 
+/**
+ * Composes scenario middleware (`withX` steps) and a final test: returns an async runner that starts from `{}`.
+ * The last argument must be the test function; earlier arguments are steps applied in order.
+ */
 export function scenario(...parts: [...ScenarioStep[], ScenarioTest]): () => Promise<void> {
   const testFn = parts.at(-1);
   if (!testFn || typeof testFn !== "function") {

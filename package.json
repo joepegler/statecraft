@@ -1,14 +1,32 @@
 {
   "name": "statecraft",
   "private": true,
+  "description": "Composable Ethereum integration-test scenarios for Vitest and viem (monorepo).",
   "type": "module",
   "packageManager": "bun@1.2.4",
+  "keywords": [
+    "ethereum",
+    "evm",
+    "vitest",
+    "viem",
+    "anvil",
+    "testing",
+    "statecraft",
+    "web3"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/your-org/statecraft.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-org/statecraft/issues"
+  },
   "workspaces": [
     "packages/*"
   ],
   "scripts": {
     "build": "bun run --workspaces build",
-    "docs:build": "vocs build",
+    "docs:build": "node scripts/generate-docs-seo.mjs && vocs build",
     "docs:dev": "vocs dev",
     "docs:preview": "vocs preview",
     "test": "vitest run",
@@ -21,5 +39,8 @@
     "vitest": "^3.2.4",
     "vocs": "^1.0.0-next.20250228T022228",
     "zile": "^0.0.22"
+  },
+  "patchedDependencies": {
+    "vocs@1.0.0-next.20250228T022228": "patches/vocs@1.0.0-next.20250228T022228.patch"
   }
 }

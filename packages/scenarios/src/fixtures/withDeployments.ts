@@ -1,24 +1,34 @@
 import { getContract } from "viem";
-import type { ContractArtifact, DeploymentRecord, ScenarioStep } from "../types";
+import type {
+  AfterDeployContext,
+  ContractArtifact,
+  DeploymentArgsResolver,
+  DeploymentRecord,
+  ScenarioStep,
+} from "../types";
 import { extractBytecode, requireRuntimeClients } from "../utils";
 
-type ArgsResolver = (ctx: {
-  deployments: Record<string, DeploymentRecord>;
-}) => readonly unknown[] | Promise<readonly unknown[]>;
-
+/**
+ * Declares one contract to deploy via `walletClient.deployContract` in declaration order.
+ */
 export type DeploymentSpec = {
+  /** Artifact with required `abi` and creation `bytecode`. */
   artifact: ContractArtifact;
-  args?: readonly unknown[] | ArgsResolver;
-  afterDeploy?: (ctx: {
-    name: string;
-    deployment: DeploymentRecord;
-    deployments: Record<string, DeploymentRecord>;
-    wallet: string | undefined;
-  }) => Promise<void>;
+  /** Static constructor args, or a resolver that may depend on earlier deployments. */
+  args?: readonly unknown[] | DeploymentArgsResolver;
+  /** Optional hook after the deployment is mined and merged into `deployments`. */
+  afterDeploy?: (ctx: AfterDeployContext) => Promise<void>;
 };
 
+/**
+ * Map of deployment name → spec; names become keys on `ctx.deployments`.
+ */
 export type WithDeploymentsConfig = Record<string, DeploymentSpec>;
 
+/**
+ * Middleware: deploys each spec in key order, then merges `DeploymentRecord`s into `ctx.deployments`.
+ * Requires a prior `withChain` / `withFork` and a wallet account on `walletClient`.
+ */
 export function withDeployments(config: WithDeploymentsConfig): ScenarioStep {
   return async (ctx, next) => {
     requireRuntimeClients(ctx);
