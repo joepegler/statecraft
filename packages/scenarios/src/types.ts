@@ -48,6 +48,28 @@ export type DeploymentArgsResolver = (ctx: {
 }) => readonly unknown[] | Promise<readonly unknown[]>;
 
 /**
+ * Context before any fixture runs. The first step receives this shape from the scenario runner.
+ */
+export type EmptyScenarioContext = {};
+
+/**
+ * Context after {@link withChain} or {@link withFork}: runtime handle and viem clients are always set.
+ */
+export type ScenarioRuntimeClientsContext = ScenarioContext & {
+  runtime: NonNullable<ScenarioContext["runtime"]>;
+  publicClient: NonNullable<ScenarioContext["publicClient"]>;
+  walletClient: NonNullable<ScenarioContext["walletClient"]>;
+  testClient: NonNullable<ScenarioContext["testClient"]>;
+};
+
+/**
+ * Context after {@link withFundedWallet}: funded account address is always set (in addition to runtime clients).
+ */
+export type ScenarioFundedWalletContext = ScenarioRuntimeClientsContext & {
+  wallet: Hex;
+};
+
+/**
  * Accumulated context passed through `withX` middleware. Fields are added by fixtures (e.g. {@link withChain}).
  */
 export type ScenarioContext = {
@@ -95,6 +117,9 @@ export type ScenarioTest<Ctx extends ScenarioContext = ScenarioContext> = (ctx: 
 
 /**
  * One middleware layer: receives context, may enrich it, then must call `next` exactly once with the outgoing context.
+ *
+ * @typeParam In - Minimum context required before this step runs (often narrowed by prior fixtures).
+ * @typeParam Out - Context shape after this step forwards to `next` (must include everything downstream needs).
  */
 export type ScenarioStep<In extends ScenarioContext = ScenarioContext, Out extends ScenarioContext = ScenarioContext> = (
   ctx: In,

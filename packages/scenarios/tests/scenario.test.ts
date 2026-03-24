@@ -1,18 +1,21 @@
 import { describe, expect, test, vi } from "vitest";
+import type { Hex } from "viem";
 import { scenario } from "../src/scenario";
-import type { ScenarioStep } from "../src/types";
+import type { EmptyScenarioContext, ScenarioContext, ScenarioStep } from "../src/types";
 
 describe("scenario composition", () => {
   test("runs steps in declared order and passes context", async () => {
     const order: string[] = [];
 
-    const stepA: ScenarioStep = async (ctx, next) => {
+    type WithWallet = ScenarioContext & { wallet: Hex };
+
+    const stepA: ScenarioStep<EmptyScenarioContext, WithWallet> = async (ctx, next) => {
       order.push("a:before");
-      await next({ ...ctx, wallet: "0xabc" });
+      await next({ ...ctx, wallet: "0xabc" as Hex });
       order.push("a:after");
     };
 
-    const stepB: ScenarioStep = async (ctx, next) => {
+    const stepB: ScenarioStep<WithWallet, WithWallet> = async (ctx, next) => {
       order.push(`b:${ctx.wallet}`);
       await next(ctx);
     };
@@ -28,7 +31,7 @@ describe("scenario composition", () => {
   });
 
   test("throws if a step calls next twice", async () => {
-    const badStep: ScenarioStep = async (ctx, next) => {
+    const badStep: ScenarioStep<ScenarioContext, ScenarioContext> = async (ctx, next) => {
       await next(ctx);
       await next(ctx);
     };

@@ -1,14 +1,16 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import * as React from "react";
-import { defineConfig } from "vocs";
+// Import `defineConfig` from the config module, not `from "vocs"`: the package entry re-exports the dev server,
+// which creates a circular dependency while Vite loads this file and can leave `vocs dev` stuck with no output.
+import { defineConfig } from "./node_modules/vocs/_lib/config.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const SITE_DESCRIPTION =
   "Statecraft helps TypeScript teams ship deterministic Ethereum integration tests in Vitest: compose Anvil-style runtimes, pinned forks, funded wallets, and contract setup with explicit scenario steps instead of per-file chain boilerplate.";
 
-const CODE_REPOSITORY = "https://github.com/your-org/statecraft";
+const CODE_REPOSITORY = "https://github.com/joepegler/statecraft";
 
 const envBasePath = process.env.BASE_PATH?.trim();
 
@@ -37,7 +39,7 @@ const pageSocial: Record<
   { twitterTitle: string; twitterDescription: string }
 > = {
   "/": {
-    twitterTitle: "Statecraft — Vitest + viem Ethereum integration testing",
+    twitterTitle: "Statecraft: Vitest + viem Ethereum integration testing",
     twitterDescription:
       "Compose pinned forks, funded wallets, and contract fixtures with scenario steps. Deterministic EVM tests in TypeScript without repeated Anvil setup.",
   },
@@ -49,7 +51,12 @@ const pageSocial: Record<
   "/core-concepts": {
     twitterTitle: "Core concepts – Statecraft",
     twitterDescription:
-      "How scenario composition, middleware-style steps, and runtimes (withChain, withFork, withContracts, withDeployments) fit together in Statecraft.",
+      "How scenario composition, typed context, and fixtures like withChain, withFork, withFundedWallet, and withSnapshot fit together in Statecraft.",
+  },
+  "/migration": {
+    twitterTitle: "Migration – Statecraft",
+    twitterDescription:
+      "Typed scenario context, withErc20Balance ordering, requireContext, and withFundedWallet.erc20 when upgrading Statecraft.",
   },
 };
 
@@ -110,16 +117,19 @@ export default defineConfig({
       items: [
         { text: "Overview", link: "/" },
         { text: "Quickstart", link: "/quickstart" },
+        { text: "Core Concepts", link: "/core-concepts" },
       ],
     },
     {
-      text: "Guides",
-      items: [{ text: "Core Concepts", link: "/core-concepts" }],
+      text: "Reference",
+      items: [{ text: "Migration", link: "/migration" }],
     },
   ],
   head({ path }) {
     const docsBase = docsBaseUrlRaw?.replace(/\/+$/, "");
-    if (!docsBase) return null;
+    if (!docsBase) {
+      return React.createElement(React.Fragment, null);
+    }
 
     const locationKey = path.replace(/\/+$/, "") || "/";
     const href = canonicalHref(docsBase, locationKey);

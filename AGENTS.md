@@ -77,6 +77,10 @@ export type SomeRow = {
 - Do not define reusable `type` / `interface` aliases inside functions (e.g. `type WalletRow = ...` inside a function body). **Move them to that folder’s `types.ts`** and import them. **Exception:** truly one-off, non-exported shapes used once that do not improve readability when lifted.
 - Exported functions and public factory/fixture entrypoints should have a short TSDoc summary (what it does, ordering/deps if non-obvious).
 
+## Website copy
+
+- **Em dashes are forbidden** in public site copy (for example under `docs/`, including MDX and any strings surfaced on the docs site). Do not introduce the em dash character (Unicode U+2014). Prefer commas, parentheses, colons, or separate sentences instead.
+
 ## Testing Standards
 
 - Every behavior change must include or update tests.

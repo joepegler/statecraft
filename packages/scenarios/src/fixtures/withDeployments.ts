@@ -4,6 +4,7 @@ import type {
   ContractArtifact,
   DeploymentArgsResolver,
   DeploymentRecord,
+  ScenarioRuntimeClientsContext,
   ScenarioStep,
 } from "../types";
 import { extractBytecode, requireRuntimeClients } from "../utils";
@@ -25,11 +26,14 @@ export type DeploymentSpec = {
  */
 export type WithDeploymentsConfig = Record<string, DeploymentSpec>;
 
+type WithDeploymentsIn = ScenarioRuntimeClientsContext & { deployments?: Record<string, DeploymentRecord> };
+type WithDeploymentsOut = ScenarioRuntimeClientsContext & { deployments: Record<string, DeploymentRecord> };
+
 /**
  * Middleware: deploys each spec in key order, then merges `DeploymentRecord`s into `ctx.deployments`.
  * Requires a prior `withChain` / `withFork` and a wallet account on `walletClient`.
  */
-export function withDeployments(config: WithDeploymentsConfig): ScenarioStep {
+export function withDeployments(config: WithDeploymentsConfig): ScenarioStep<WithDeploymentsIn, WithDeploymentsOut> {
   return async (ctx, next) => {
     requireRuntimeClients(ctx);
     const deployments: Record<string, DeploymentRecord> = { ...(ctx.deployments ?? {}) };

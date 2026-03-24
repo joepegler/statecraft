@@ -1,18 +1,65 @@
 ---
 title: Quickstart
-description: Install Statecraft with Bun, run the examples, and write a Vitest scenario using withFork and withFundedWallet against a pinned mainnet fork.
+description: Install Statecraft in a Vitest project, run a minimal withChain scenario first, then move to a pinned fork with withFork and withFundedWallet.
 ---
 
 # Quickstart
 
-Install dependencies and run the existing tests:
+This page gets you from install to a working scenario quickly.
+
+## Prerequisites
+
+- `vitest` test runner
+- `viem` clients/utilities
+- [`anvil`](https://book.getfoundry.sh/forge/anvil) on your `PATH` (for local runtime/fork execution)
+
+For forked examples, set:
 
 ```bash
-bun install
-bun test
+export MAINNET_RPC_URL="https://..."
 ```
 
-Create a scenario by composing fixtures with `@statecraft/vitest`:
+## Install
+
+Choose one package manager:
+
+```bash
+bun add -D @statecraft/vitest vitest viem
+```
+
+```bash
+npm install -D @statecraft/vitest vitest viem
+```
+
+## Step 1: first passing scenario (local chain)
+
+Start with `withChain()` so you can run without external RPC:
+
+```ts twoslash
+import { test, expect } from "vitest";
+import { parseEther } from "viem";
+import { scenario, withChain, withFundedWallet } from "@statecraft/vitest";
+
+test(
+  "funded wallet on local chain",
+  scenario(
+    withChain(),
+    withFundedWallet({
+      balance: parseEther("1"),
+    }),
+    async ({ wallet, publicClient }) => {
+      const balance = await publicClient.getBalance({ address: wallet });
+      //      ^?
+      expect(balance).toBe(parseEther("1"));
+      //    ^?
+    },
+  ),
+);
+```
+
+## Step 2: switch to a pinned fork
+
+Once the local scenario works, move to `withFork()` for real mainnet state while staying deterministic:
 
 ```ts twoslash
 import { test, expect } from "vitest";
@@ -20,7 +67,7 @@ import { parseEther } from "viem";
 import { scenario, withFork, withFundedWallet } from "@statecraft/vitest";
 
 test(
-  "funded wallet on mainnet fork",
+  "funded wallet on pinned mainnet fork",
   scenario(
     withFork({
       rpcUrl: process.env.MAINNET_RPC_URL!,
@@ -30,22 +77,31 @@ test(
       balance: parseEther("1"),
     }),
     async ({ wallet, publicClient }) => {
-      const balance = await publicClient!.getBalance({ address: wallet! });
-      //      ^?
+      const balance = await publicClient.getBalance({ address: wallet });
       expect(balance).toBe(parseEther("1"));
-      //    ^?
     },
   ),
 );
 ```
 
-## Example scenarios
+## Next steps
 
 `packages/examples/examples/scenarios.test.ts` includes:
 
 - fresh local chain + funded wallet
 - forked mainnet + funded wallet + real contract call
+- forked mainnet + funded wallet + USDC via `withFundedWallet.erc20` or `withErc20Balance`
 - runtime bytecode injection with `withContracts`
 - real deployment flow with `withDeployments`
+- suite-scoped runtime reuse with `withExternalRuntime` plus `withSnapshot`
 
-When you are ready for how steps compose, read [Core concepts](/core-concepts).
+When you are ready for fixture ordering, lifecycle terminology (managed vs external), and typing behavior, read [Core concepts](/core-concepts).
+
+## ERC-20 balances (optional)
+
+On Anvil-style local/forked nodes, you can seed token balances in two ways:
+
+- `withFundedWallet({ erc20: [...] })` when recipient is the scenario wallet
+- `withErc20Balance({ token, amount, to? })` when you need explicit recipient control
+
+See [Core concepts](/core-concepts#erc-20-balance-dealing) for behavior and caveats.

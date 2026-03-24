@@ -16,17 +16,17 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/your-org/statecraft.git"
+    "url": "git+https://github.com/joepegler/statecraft.git"
   },
   "bugs": {
-    "url": "https://github.com/your-org/statecraft/issues"
+    "url": "https://github.com/joepegler/statecraft/issues"
   },
   "workspaces": [
     "packages/*"
   ],
   "scripts": {
     "build": "bun run --workspaces build",
-    "docs:build": "node scripts/generate-docs-seo.mjs && vocs build",
+    "docs:build": "vocs build",
     "docs:dev": "vocs dev",
     "docs:preview": "vocs preview",
     "test": "vitest run",
@@ -37,10 +37,7 @@
     "@types/node": "^24.3.0",
     "typescript": "^5.9.2",
     "vitest": "^3.2.4",
-    "vocs": "^1.0.0-next.20250228T022228",
+    "vocs": "1.0.12",
     "zile": "^0.0.22"
-  },
-  "patchedDependencies": {
-    "vocs@1.0.0-next.20250228T022228": "patches/vocs@1.0.0-next.20250228T022228.patch"
   }
 }

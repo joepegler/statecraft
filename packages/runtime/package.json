@@ -8,14 +8,14 @@
     "testing",
     "statecraft"
   ],
-  "homepage": "https://github.com/your-org/statecraft#readme",
+  "homepage": "https://github.com/joepegler/statecraft#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/your-org/statecraft.git",
+    "url": "git+https://github.com/joepegler/statecraft.git",
     "directory": "packages/runtime"
   },
   "bugs": {
-    "url": "https://github.com/your-org/statecraft/issues"
+    "url": "https://github.com/joepegler/statecraft/issues"
   },
   "type": "module",
   "main": "./src/index.ts",

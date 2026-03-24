@@ -1,21 +1,64 @@
 import { spawnSync } from "node:child_process";
-import { expect, test } from "vitest";
+import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import { parseEther } from "viem";
 import {
   scenario,
   withChain,
+  withExternalRuntime,
   withContracts,
   withDeployments,
+  withErc20Balance,
   withFork,
   withFundedWallet,
+  withSnapshot,
 } from "@statecraft/vitest";
-import type { ContractArtifact, ScenarioContext } from "@statecraft/vitest";
+import type { ContractArtifact } from "@statecraft/vitest";
+import { startRuntime, stopRuntime, type RuntimeHandle } from "@statecraft/runtime";
 import answerArtifact from "../artifacts/Answer.json";
 import { erc20Abi } from "viem";
 
 const hasAnvil =
   spawnSync("anvil", ["--version"], { stdio: "ignore" }).status === 0;
 const hasMainnetRpc = Boolean(process.env.MAINNET_RPC_URL);
+
+describe.runIf(hasAnvil)("suite-scoped runtime (external lifecycle)", () => {
+  let runtime: RuntimeHandle;
+
+  beforeAll(async () => {
+    runtime = await startRuntime({ mode: "chain", chainId: 31_337 });
+  });
+
+  afterAll(async () => {
+    await stopRuntime(runtime);
+  });
+
+  test("supports repeated scenarios on one runtime", async () => {
+    await scenario(
+      withExternalRuntime({ runtime, clients: { chainId: 31_337 } }),
+      withSnapshot(),
+      withFundedWallet({ balance: parseEther("2") }),
+      async ({ wallet, publicClient }) => {
+        const balance = await publicClient.getBalance({ address: wallet });
+        expect(balance).toBe(parseEther("2"));
+      },
+    )();
+  });
+
+  test("snapshot isolates chain mutations across tests", async () => {
+    await scenario(
+      withExternalRuntime({ runtime, clients: { chainId: 31_337 } }),
+      withSnapshot(),
+      withFundedWallet({ balance: parseEther("1") }),
+      async ({ wallet, publicClient, testClient }) => {
+        const original = await publicClient.getBalance({ address: wallet });
+        await testClient.setBalance({ address: wallet, value: parseEther("9") });
+        const changed = await publicClient.getBalance({ address: wallet });
+        expect(original).toBe(parseEther("1"));
+        expect(changed).toBe(parseEther("9"));
+      },
+    )();
+  });
+});
 
 test.runIf(hasAnvil)(
   "fresh chain + funded wallet",
@@ -24,8 +67,8 @@ test.runIf(hasAnvil)(
     withFundedWallet({
       balance: parseEther("1"),
     }),
-    async ({ wallet, publicClient }: ScenarioContext) => {
-      const balance = await publicClient!.getBalance({ address: wallet! });
+    async ({ wallet, publicClient }) => {
+      const balance = await publicClient.getBalance({ address: wallet });
       expect(balance).toBe(parseEther("1"));
     },
   ),
@@ -41,16 +84,72 @@ test.runIf(hasAnvil && hasMainnetRpc)(
     withFundedWallet({
       balance: parseEther("1"),
     }),
-    async ({ wallet, publicClient }: ScenarioContext) => {
+    async ({ wallet, publicClient }) => {
       const wethAddress = "0xC02aaA39b223FE8D0A0E5C4F27eAD9083C756Cc2";
-      const tokenBalance = await publicClient!.readContract({
+      const tokenBalance = await publicClient.readContract({
         address: wethAddress,
         abi: erc20Abi,
         functionName: "balanceOf",
-        args: [wallet!],
+        args: [wallet],
       });
 
       expect(tokenBalance).toBe(0n);
+    },
+  ),
+);
+
+test.runIf(hasAnvil && hasMainnetRpc)(
+  "forked chain + funded wallet + USDC via withFundedWallet.erc20",
+  scenario(
+    withFork({
+      rpcUrl: process.env.MAINNET_RPC_URL!,
+      blockNumber: 22_000_000n,
+    }),
+    withFundedWallet({
+      balance: parseEther("1"),
+      erc20: [
+        {
+          token: "0xA0b86991c6218b36c1d19D4a2e9Eb0ce3606eB48",
+          amount: 1_000_000n,
+        },
+      ],
+    }),
+    async ({ wallet, publicClient }) => {
+      const usdc = "0xA0b86991c6218b36c1d19D4a2e9Eb0ce3606eB48" as const;
+      const tokenBalance = await publicClient.readContract({
+        address: usdc,
+        abi: erc20Abi,
+        functionName: "balanceOf",
+        args: [wallet],
+      });
+      expect(tokenBalance).toBe(1_000_000n);
+    },
+  ),
+);
+
+test.runIf(hasAnvil && hasMainnetRpc)(
+  "forked chain + funded wallet + withErc20Balance step",
+  scenario(
+    withFork({
+      rpcUrl: process.env.MAINNET_RPC_URL!,
+      blockNumber: 22_000_000n,
+    }),
+    withFundedWallet({
+      balance: parseEther("1"),
+    }),
+    withErc20Balance({
+      token: "0xA0b86991c6218b36c1d19D4a2e9Eb0ce3606eB48",
+      amount: 1_000_000n,
+    }),
+    async ({ wallet, publicClient }) => {
+      const usdc = "0xA0b86991c6218b36c1d19D4a2e9Eb0ce3606eB48" as const;
+      const tokenBalance = await publicClient.readContract({
+        address: usdc,
+        abi: erc20Abi,
+        functionName: "balanceOf",
+        args: [wallet],
+      });
+      expect(tokenBalance).toBe(1_000_000n);
     },
   ),
 );
@@ -65,7 +164,7 @@ test.runIf(hasAnvil)(
         args: [],
       },
     }),
-    async ({ deployments }: ScenarioContext) => {
+    async ({ deployments }) => {
       const deployment = deployments?.answer;
       if (!deployment) {
         throw new Error("Expected deployment record for answer.");
@@ -87,7 +186,7 @@ test.runIf(hasAnvil)(
         address: "0x1000000000000000000000000000000000000001",
       },
     }),
-    async ({ contracts }: ScenarioContext) => {
+    async ({ contracts }) => {
       const contract = contracts?.answer;
       if (!contract) {
         throw new Error("Expected contract handle for answer.");

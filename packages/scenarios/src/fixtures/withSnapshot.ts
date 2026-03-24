@@ -1,11 +1,11 @@
-import type { ScenarioStep } from "../types";
+import type { ScenarioRuntimeClientsContext, ScenarioStep } from "../types";
 import { requireRuntimeClients } from "../utils";
 
 /**
  * Middleware: takes an anvil snapshot before `next`, then reverts to it in `finally`
  * (isolates side effects of inner steps). Requires `withChain` / `withFork`.
  */
-export function withSnapshot(): ScenarioStep {
+export function withSnapshot(): ScenarioStep<ScenarioRuntimeClientsContext, ScenarioRuntimeClientsContext> {
   return async (ctx, next) => {
     requireRuntimeClients(ctx);
 

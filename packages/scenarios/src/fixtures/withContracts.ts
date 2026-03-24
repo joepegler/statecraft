@@ -1,5 +1,11 @@
 import { getContract, type Hex } from "viem";
-import type { AfterSetCodeContext, ContractArtifact, ScenarioContracts, ScenarioStep } from "../types";
+import type {
+  AfterSetCodeContext,
+  ContractArtifact,
+  ScenarioContracts,
+  ScenarioRuntimeClientsContext,
+  ScenarioStep,
+} from "../types";
 import { extractBytecode, requireRuntimeClients } from "../utils";
 
 /**
@@ -21,11 +27,14 @@ export type ContractInjection = {
  */
 export type WithContractsConfig = Record<string, ContractInjection>;
 
+type WithContractsIn = ScenarioRuntimeClientsContext & { contracts?: ScenarioContracts };
+type WithContractsOut = ScenarioRuntimeClientsContext & { contracts: ScenarioContracts };
+
 /**
  * Middleware: for each entry, `setCode` at `address`, then merge contract handles into `ctx.contracts`.
  * Requires a prior `withChain` / `withFork` (runtime + clients).
  */
-export function withContracts(config: WithContractsConfig): ScenarioStep {
+export function withContracts(config: WithContractsConfig): ScenarioStep<WithContractsIn, WithContractsOut> {
   return async (ctx, next) => {
     requireRuntimeClients(ctx);
     const contracts: ScenarioContracts = { ...(ctx.contracts ?? {}) };
