@@ -1,0 +1,18 @@
+{
+  "name": "@statecraft/clients",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "zile",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@statecraft/runtime": "workspace:*",
+    "viem": "^2.38.2"
+  }
+}

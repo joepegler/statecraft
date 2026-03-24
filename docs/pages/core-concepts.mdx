@@ -1,0 +1,21 @@
+# Core Concepts
+
+## Scenario composition
+
+`scenario(...steps, testFn)` composes fixtures in order and returns a
+Vitest-compatible async test function.
+
+Each scenario step is explicit middleware: it receives context, adds to it, and
+calls `next(updatedCtx)`.
+
+## Runtime fixtures
+
+- `withChain`: creates a fresh local Anvil runtime.
+- `withFork`: creates a pinned local fork (`rpcUrl` + `blockNumber`) for deterministic tests.
+- `withContracts`: injects deployed runtime bytecode at known addresses for fast setup.
+- `withDeployments`: performs real deployments using creation bytecode and constructor semantics.
+
+## Scope
+
+Statecraft is intentionally focused on explicit EVM testing workflows for
+TypeScript + Vitest + viem. It is not a replacement for Foundry or Hardhat.

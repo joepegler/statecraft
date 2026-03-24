@@ -1,0 +1,21 @@
+# Statecraft
+
+Composable scenario runtime for Ethereum testing in Vitest.
+
+Statecraft removes repetitive Web3 integration-test boilerplate in TypeScript
+projects. Instead of writing one-off setup for local chains, forks, wallet
+funding, and deployments in every test, you compose explicit fixtures and keep
+test bodies focused on behavior.
+
+## Package layout
+
+- `packages/runtime`: runtime lifecycle (start/stop local chain or fork)
+- `packages/clients`: viem `publicClient`, `walletClient`, `testClient` creation
+- `packages/scenarios`: scenario engine and `withX` fixtures
+- `packages/vitest`: ergonomic Vitest-facing exports
+- `packages/examples`: runnable demonstrations
+
+## Next steps
+
+- Read [Quickstart](/quickstart) for the first scenario setup.
+- Review [Core Concepts](/core-concepts) for fixture composition details.

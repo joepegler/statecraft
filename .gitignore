@@ -1,0 +1,54 @@
+# Dependencies
+node_modules/
+
+# Package manager files/caches
+.pnpm-store/
+.npm/
+.yarn/
+
+# Build output
+dist/
+build/
+lib/
+out/
+.output/
+
+# TypeScript incremental build info
+*.tsbuildinfo
+
+# Test and coverage output
+coverage/
+.nyc_output/
+test-results/
+playwright-report/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment and local config
+.env
+.env.*
+!.env.example
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# IDE/editor folders
+.idea/
+.vscode/
+
+# OS-generated files
+.DS_Store
+Thumbs.db
+
+# Optional local tool state
+.cache/
+.eslintcache
+

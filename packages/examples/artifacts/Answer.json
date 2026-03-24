@@ -1,0 +1,26 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "Answer",
+  "sourceName": "src/Answer.sol",
+  "abi": [
+    {
+      "type": "function",
+      "name": "answer",
+      "stateMutability": "view",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ]
+    }
+  ],
+  "bytecode": {
+    "object": "0x600a600c600039600a6000f3602a60005260206000f3"
+  },
+  "deployedBytecode": {
+    "object": "0x602a60005260206000f3"
+  }
+}

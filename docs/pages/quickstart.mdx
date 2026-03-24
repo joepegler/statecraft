@@ -1,0 +1,42 @@
+# Quickstart
+
+Install dependencies and run the existing tests:
+
+```bash
+bun install
+bun test
+```
+
+Create a scenario by composing fixtures with `@statecraft/vitest`:
+
+```ts
+import { test, expect } from "vitest";
+import { parseEther } from "viem";
+import { scenario, withFork, withFundedWallet } from "@statecraft/vitest";
+
+test(
+  "funded wallet on mainnet fork",
+  scenario(
+    withFork({
+      rpcUrl: process.env.MAINNET_RPC_URL!,
+      blockNumber: 22_000_000n,
+    }),
+    withFundedWallet({
+      balance: parseEther("1"),
+    }),
+    async ({ wallet, publicClient }) => {
+      const balance = await publicClient!.getBalance({ address: wallet! });
+      expect(balance).toBe(parseEther("1"));
+    },
+  ),
+);
+```
+
+## Example scenarios
+
+`packages/examples/examples/scenarios.test.ts` includes:
+
+- fresh local chain + funded wallet
+- forked mainnet + funded wallet + real contract call
+- runtime bytecode injection with `withContracts`
+- real deployment flow with `withDeployments`
