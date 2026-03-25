@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@pimlico/alto": "^0.0.20",
-    "@st8craft/vitest": "workspace:*",
+    "@st8craft/core": "workspace:*",
     "viem": "^2.38.2"
   }
 }

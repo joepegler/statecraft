@@ -18,7 +18,7 @@ import {
   withFork,
   withFundedWallet,
   withErc20Balance,
-} from "@st8craft/vitest";
+} from "@st8craft/core";
 
 const USDC_MAINNET = "0xA0b86991c6218b36c1d19D4a2e9Eb0ce3606eB48" as const;
 
@@ -71,14 +71,14 @@ Ensure `anvil` is available on your `PATH`.
 ### Install
 
 ```bash
-bun add -D @st8craft/vitest
+bun add -D @st8craft/core
 ```
 
 ### Create a local chain scenario
 
 ```ts
 import { test, expect } from "vitest";
-import { scenario, withChain, withFundedWallet } from "@st8craft/vitest";
+import { scenario, withChain, withFundedWallet } from "@st8craft/core";
 
 test(
   "runs a funded wallet scenario in one test",
@@ -132,7 +132,7 @@ Run examples:
 
 ```bash
 bun install
-bun test
+bun run test
 ```
 
 Included examples in `packages/examples/examples/scenarios.test.ts`:
@@ -145,11 +145,8 @@ Included examples in `packages/examples/examples/scenarios.test.ts`:
 
 ## Package Layout
 
-- `packages/runtime`: runtime lifecycle for local and forked chains
-- `packages/clients`: viem `publicClient`, `walletClient`, `testClient` wiring
-- `packages/scenarios`: scenario engine and `withX` fixtures
-- `packages/vitest`: Vitest-facing exports
-- `packages/examples`: runnable scenario examples
+- `packages/core`: published SDK (`@st8craft/core`): runtime, viem clients, scenario engine, and `withX` fixtures
+- `packages/examples`: runnable scenario examples (private workspace package)
 
 ## Documentation
 

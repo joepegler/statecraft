@@ -1,5 +1,5 @@
-import { startRuntime, stopRuntime } from "@st8craft/runtime";
-import { createClients } from "@st8craft/clients";
+import { startRuntime, stopRuntime } from "../../runtime/index.js";
+import { createClients } from "../../clients/index.js";
 import type { EmptyScenarioContext, ScenarioRuntimeClientsContext, ScenarioStep } from "../types.js";
 
 /** Options for starting a fresh chain (non-fork) anvil instance. */

@@ -1,11 +1,11 @@
 import {
   WORKSPACE_SPEC,
-  VITEST_PACKAGE,
+  SDK_PACKAGE,
   getExamplesPaths,
   readExamplesPackageJson,
   writeExamplesPackageJson,
-  vitestSpecifierForPublished,
-  setVitestDependency,
+  sdkSpecifierForPublished,
+  setSdkDependency,
   runCommand,
 } from "./examples-deps.mjs";
 
@@ -27,10 +27,10 @@ if (mode !== "local" && mode !== "published") {
 const { repoRoot, packageJsonPath } = getExamplesPaths(import.meta.url);
 const pkg = await readExamplesPackageJson(packageJsonPath);
 const specifier =
-  mode === "local" ? WORKSPACE_SPEC : vitestSpecifierForPublished(versionArg);
-setVitestDependency(pkg, specifier);
+  mode === "local" ? WORKSPACE_SPEC : sdkSpecifierForPublished(versionArg);
+setSdkDependency(pkg, specifier);
 await writeExamplesPackageJson(packageJsonPath, pkg);
-console.log(`Set ${VITEST_PACKAGE} -> ${specifier}`);
+console.log(`Set ${SDK_PACKAGE} -> ${specifier}`);
 
 if (!noInstall) {
   await runCommand("bun", ["install"], repoRoot);

@@ -4,12 +4,12 @@ const startRuntime = vi.fn();
 const stopRuntime = vi.fn();
 const createClients = vi.fn();
 
-vi.mock("@st8craft/runtime", () => ({
+vi.mock("../../runtime/index.js", () => ({
   startRuntime,
   stopRuntime,
 }));
 
-vi.mock("@st8craft/clients", () => ({
+vi.mock("../../clients/index.js", () => ({
   createClients,
 }));
 

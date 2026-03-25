@@ -1,30 +1,30 @@
 import {
-  VITEST_PACKAGE,
+  SDK_PACKAGE,
   getExamplesPaths,
   readExamplesPackageJson,
   writeExamplesPackageJson,
-  vitestSpecifierForPublished,
-  setVitestDependency,
+  sdkSpecifierForPublished,
+  setSdkDependency,
   runCommand,
 } from "./examples-deps.mjs";
 
 const { repoRoot, packageJsonPath } = getExamplesPaths(import.meta.url);
 const requestedVersion = process.argv[2] ?? "latest";
-const npmSpecifier = vitestSpecifierForPublished(requestedVersion);
+const npmSpecifier = sdkSpecifierForPublished(requestedVersion);
 
 const packageJson = await readExamplesPackageJson(packageJsonPath);
-const originalSpecifier = packageJson.dependencies?.[VITEST_PACKAGE];
+const originalSpecifier = packageJson.dependencies?.[SDK_PACKAGE];
 
 if (!originalSpecifier) {
   throw new Error(
-    `Missing ${VITEST_PACKAGE} in ${packageJsonPath}. Add it to dependencies first.`,
+    `Missing ${SDK_PACKAGE} in ${packageJsonPath}. Add it to dependencies first.`,
   );
 }
 
-setVitestDependency(packageJson, npmSpecifier);
+setSdkDependency(packageJson, npmSpecifier);
 await writeExamplesPackageJson(packageJsonPath, packageJson);
 
-console.log(`Temporarily set ${VITEST_PACKAGE} -> ${npmSpecifier}`);
+console.log(`Temporarily set ${SDK_PACKAGE} -> ${npmSpecifier}`);
 
 let restoreFailed = false;
 
@@ -34,9 +34,9 @@ try {
 } finally {
   try {
     const restoreJson = await readExamplesPackageJson(packageJsonPath);
-    restoreJson.dependencies[VITEST_PACKAGE] = originalSpecifier;
+    restoreJson.dependencies[SDK_PACKAGE] = originalSpecifier;
     await writeExamplesPackageJson(packageJsonPath, restoreJson);
-    console.log(`Restored ${VITEST_PACKAGE} -> ${originalSpecifier}`);
+    console.log(`Restored ${SDK_PACKAGE} -> ${originalSpecifier}`);
     await runCommand("bun", ["install"], repoRoot);
   } catch (error) {
     restoreFailed = true;

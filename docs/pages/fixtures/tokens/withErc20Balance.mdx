@@ -12,7 +12,7 @@ Use `withErc20Balance()` to seed ERC-20 balances directly in test state, so you 
 ```ts twoslash [index.ts]
 import { test, expect } from "vitest";
 import { erc20Abi } from "viem";
-import { scenario, withChain, withFundedWallet, withErc20Balance } from "@st8craft/vitest";
+import { scenario, withChain, withFundedWallet, withErc20Balance } from "@st8craft/core";
 
 const USDC = "0xA0b86991c6218b36c1d19D4a2e9Eb0ce3606eB48";
 

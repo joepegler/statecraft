@@ -15,12 +15,14 @@
         "zile": "^0.0.22",
       },
     },
-    "packages/clients": {
-      "name": "@st8craft/clients",
-      "version": "0.1.3",
+    "packages/core": {
+      "name": "@st8craft/core",
+      "version": "0.2.0",
       "dependencies": {
-        "@st8craft/runtime": "^0.1.3",
         "viem": "^2.38.2",
+      },
+      "peerDependencies": {
+        "@pimlico/alto": "^0.0.20",
       },
     },
     "packages/examples": {
@@ -28,34 +30,8 @@
       "version": "0.1.0",
       "dependencies": {
         "@pimlico/alto": "^0.0.20",
-        "@st8craft/vitest": "workspace:*",
+        "@st8craft/core": "workspace:*",
         "viem": "^2.38.2",
-      },
-    },
-    "packages/runtime": {
-      "name": "@st8craft/runtime",
-      "version": "0.1.3",
-    },
-    "packages/scenarios": {
-      "name": "@st8craft/scenarios",
-      "version": "0.1.3",
-      "dependencies": {
-        "@st8craft/clients": "^0.1.3",
-        "@st8craft/runtime": "^0.1.3",
-        "viem": "^2.38.2",
-      },
-      "peerDependencies": {
-        "@pimlico/alto": "^0.0.20",
-      },
-    },
-    "packages/vitest": {
-      "name": "@st8craft/vitest",
-      "version": "0.1.3",
-      "dependencies": {
-        "@st8craft/scenarios": "^0.1.3",
-      },
-      "peerDependencies": {
-        "@pimlico/alto": "^0.0.20",
       },
     },
   },
@@ -632,15 +608,9 @@
 
     "@sindresorhus/merge-streams": ["@sindresorhus/merge-streams@2.3.0", "", {}, "sha512-LtoMMhxAlorcGhmFYI+LhPgbPZCkgP6ra1YL604EeF6U98pLlQ3iWIGMdWSC+vWmPBWBNgmDBAhnAobLROJmwg=="],
 
-    "@st8craft/clients": ["@st8craft/clients@workspace:packages/clients"],
+    "@st8craft/core": ["@st8craft/core@workspace:packages/core"],
 
     "@st8craft/examples": ["@st8craft/examples@workspace:packages/examples"],
-
-    "@st8craft/runtime": ["@st8craft/runtime@workspace:packages/runtime"],
-
-    "@st8craft/scenarios": ["@st8craft/scenarios@workspace:packages/scenarios"],
-
-    "@st8craft/vitest": ["@st8craft/vitest@workspace:packages/vitest"],
 
     "@tailwindcss/node": ["@tailwindcss/node@4.0.7", "", { "dependencies": { "enhanced-resolve": "^5.18.1", "jiti": "^2.4.2", "tailwindcss": "4.0.7" } }, "sha512-dkFXufkbRB2mu3FPsW5xLAUWJyexpJA+/VtQj18k3SUiJVLdpgzBd1v1gRRcIpEJj7K5KpxBKfOXlZxT3ZZRuA=="],
 
