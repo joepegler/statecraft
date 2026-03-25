@@ -1,8 +1,3 @@
-import { defineConfig } from "vitest/config";
+import { examplesVitestConfig } from "./vitest.config.shared";
 
-export default defineConfig({
-  test: {
-    include: ["examples/**/*.test.ts"],
-    setupFiles: ["dotenv/config"],
-  },
-});
+export default examplesVitestConfig({ linkLocalCore: true });

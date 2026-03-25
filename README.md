@@ -1,8 +1,8 @@
-Statecraft makes Ethereum integration tests deterministic and composable in Vitest.
+Statecraft makes Ethereum integration tests deterministic and composable in TypeScript.
 
 Most suites start clean, then degrade into hidden setup, flaky fork state, and copy-pasted helper stacks. Statecraft gives you one explicit scenario pipeline so each test declares its environment up front.
 
-If you already use Vitest + viem + Anvil, Statecraft is not a replacement for those tools. It is a testing primitive for composing setup safely and repeatably.
+If you already use viem + Anvil with a JavaScript test runner, Statecraft is not a replacement for those tools. It is a testing primitive for composing setup safely and repeatably. Examples below use Vitest; `scenario(...)` returns an async function you can pass to other runners (Jest, Node `node:test`, and similar).
 
 ## Before vs After
 
@@ -18,7 +18,7 @@ import {
   withFork,
   withFundedWallet,
   withErc20Balance,
-} from "@st8craft/vitest";
+} from "@st8craft/core";
 
 const USDC_MAINNET = "0xA0b86991c6218b36c1d19D4a2e9Eb0ce3606eB48" as const;
 
@@ -26,7 +26,7 @@ test(
   "fork + funded wallet + USDC balance",
   scenario(
     withFork({
-      rpcUrl: process.env.RPC_URL!,
+      rpcUrl: process.env.VITE_RPC_URL!,
       blockNumber: 22_000_000n,
     }),
     withFundedWallet({
@@ -71,14 +71,14 @@ Ensure `anvil` is available on your `PATH`.
 ### Install
 
 ```bash
-bun add -D @st8craft/vitest
+bun add -D @st8craft/core
 ```
 
 ### Create a local chain scenario
 
 ```ts
 import { test, expect } from "vitest";
-import { scenario, withChain, withFundedWallet } from "@st8craft/vitest";
+import { scenario, withChain, withFundedWallet } from "@st8craft/core";
 
 test(
   "runs a funded wallet scenario in one test",
@@ -97,7 +97,7 @@ test(
 
 ## Core Primitives
 
-- `scenario(...steps, testFn)`: composes setup steps into one Vitest-compatible test.
+- `scenario(...steps, testFn)`: composes setup steps into one async test function (examples wrap it with Vitest `test`).
 - `withChain()`: starts a fresh local Anvil runtime.
 - `withFork({ rpcUrl, blockNumber })`: starts a pinned local fork for deterministic mainnet state.
 - `withFundedWallet({ balance, erc20? })`: creates and funds a test wallet.
@@ -132,7 +132,7 @@ Run examples:
 
 ```bash
 bun install
-bun test
+bun run test
 ```
 
 Included examples in `packages/examples/examples/scenarios.test.ts`:
@@ -145,11 +145,8 @@ Included examples in `packages/examples/examples/scenarios.test.ts`:
 
 ## Package Layout
 
-- `packages/runtime`: runtime lifecycle for local and forked chains
-- `packages/clients`: viem `publicClient`, `walletClient`, `testClient` wiring
-- `packages/scenarios`: scenario engine and `withX` fixtures
-- `packages/vitest`: Vitest-facing exports
-- `packages/examples`: runnable scenario examples
+- `packages/core`: published SDK (`@st8craft/core`): runtime, viem clients, scenario engine, and `withX` fixtures
+- `packages/examples`: runnable scenario examples (private workspace package)
 
 ## Documentation
 

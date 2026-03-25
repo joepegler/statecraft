@@ -8,7 +8,7 @@ import { defineConfig } from "./node_modules/vocs/_lib/config.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const SITE_DESCRIPTION =
-  "Statecraft helps TypeScript teams ship deterministic Ethereum integration tests in Vitest: compose Anvil-style runtimes, pinned forks, funded wallets, and contract setup with explicit scenario steps instead of per-file chain boilerplate.";
+  "Statecraft helps TypeScript teams ship deterministic Ethereum integration tests: compose Anvil-style runtimes, pinned forks, funded wallets, and contract setup with explicit scenario steps instead of per-file chain boilerplate. Examples use Vitest; the same patterns work with other test runners.";
 
 const CODE_REPOSITORY = "https://github.com/joepegler/statecraft";
 
@@ -37,14 +37,14 @@ const pageSocial: Record<
   { twitterTitle: string; twitterDescription: string }
 > = {
   "/": {
-    twitterTitle: "Statecraft: Vitest + viem Ethereum integration testing",
+    twitterTitle: "Statecraft: viem + Anvil Ethereum integration testing",
     twitterDescription:
-      "Compose pinned forks, funded wallets, and contract fixtures with scenario steps. Deterministic EVM tests in TypeScript without repeated Anvil setup.",
+      "Compose pinned forks, funded wallets, and contract fixtures with scenario steps. Deterministic EVM tests in TypeScript without repeated Anvil setup. Vitest examples; other runners supported.",
   },
   "/quickstart": {
     twitterTitle: "Quickstart – Statecraft",
     twitterDescription:
-      "Install Statecraft, run tests with Bun, and compose a forked-mainnet Vitest scenario with withFork and withFundedWallet.",
+      "Install Statecraft, run tests with Bun, and compose a forked-mainnet scenario with withFork and withFundedWallet. Examples use Vitest.",
   },
   "/overview": {
     twitterTitle: "Overview – Statecraft",

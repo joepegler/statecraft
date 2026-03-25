@@ -28,7 +28,7 @@ jobs:
           echo "Changed files:"
           echo "$CHANGED_FILES"
 
-          if ! echo "$CHANGED_FILES" | grep -Eq '^packages/(runtime|clients|scenarios|vitest)/'; then
+          if ! echo "$CHANGED_FILES" | grep -Eq '^packages/core/'; then
             echo "No publishable SDK packages changed, skipping changeset requirement."
             exit 0
           fi

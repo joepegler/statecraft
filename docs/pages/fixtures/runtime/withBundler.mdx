@@ -5,13 +5,16 @@ description: Start a local Alto bundler connected to the current Anvil runtime.
 
 ## `withBundler({ entryPoint, mode? })`
 
+**Test runners:** Examples use Vitest `test` and `expect`. `scenario(...)` returns an async function you can pass to any runner with a similar `test` callback (for example Jest or Node `node:test`).
+
 ### Why it is useful
 Use `withBundler()` to enable ERC-4337 flows against a local bundler that is wired to your scenario runtime.
 
 ### Example
 ```ts twoslash [index.ts]
+// @errors: 2307 7031
 import { test, expect } from "vitest";
-import { scenario, withChain, withBundler } from "@st8craft/vitest";
+import { scenario, withChain, withBundler } from "@st8craft/core";
 
 const ENTRY_POINT = "0x0576a174D229E3cFA37253523E645A78A0C91B57";
 

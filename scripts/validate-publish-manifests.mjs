@@ -1,13 +1,11 @@
 #!/usr/bin/env node
 /**
- * Packs each publishable @st8craft package and fails if any packed manifest
+ * Packs the publishable @st8craft/core package and fails if the packed manifest
  * still contains workspace: protocol in dependency fields.
- * Optionally runs a consumer smoke install using file: tarballs and npm overrides
- * (no registry needed for @st8craft packages).
+ * Optionally runs a consumer smoke install using a file: tarball (no registry).
  */
 import { execFileSync } from "node:child_process";
 import {
-  copyFileSync,
   mkdtempSync,
   readFileSync,
   readdirSync,
@@ -22,12 +20,7 @@ import { fileURLToPath } from "node:url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, "..");
 
-const PUBLISH_PACKAGES = [
-  "packages/runtime",
-  "packages/clients",
-  "packages/scenarios",
-  "packages/vitest",
-];
+const PUBLISH_PACKAGES = ["packages/core"];
 
 const SKIP_SMOKE = process.env.ST8CRAFT_SKIP_CONSUMER_SMOKE === "1";
 
@@ -79,36 +72,28 @@ function tarballListsPath(tgzPath, entryPath) {
   return out.split("\n").some((line) => line === entryPath || line === `${entryPath}/`);
 }
 
-function runConsumerSmoke(tarballsByName, tmpRoot) {
+function runConsumerSmoke(tgzPath, tmpRoot) {
   const smokeDir = join(tmpRoot, "consumer-smoke");
   mkdirSync(smokeDir, { recursive: true });
-
-  const vitestTgz = tarballsByName["@st8craft/vitest"];
-  if (!vitestTgz) throw new Error("Missing @st8craft/vitest tarball path");
 
   const pkgJson = {
     name: "st8craft-consumer-smoke",
     private: true,
     type: "module",
     dependencies: {
-      "@st8craft/vitest": `file:${vitestTgz}`,
-    },
-    overrides: {
-      "@st8craft/scenarios": `file:${tarballsByName["@st8craft/scenarios"]}`,
-      "@st8craft/clients": `file:${tarballsByName["@st8craft/clients"]}`,
-      "@st8craft/runtime": `file:${tarballsByName["@st8craft/runtime"]}`,
+      "@st8craft/core": `file:${tgzPath}`,
     },
   };
 
   writeFileSync(join(smokeDir, "package.json"), `${JSON.stringify(pkgJson, null, 2)}\n`);
-  console.log("Running consumer smoke: npm install + import @st8craft/vitest");
+  console.log("Running consumer smoke: npm install + import @st8craft/core");
   execFileSync("npm", ["install"], { cwd: smokeDir, stdio: "inherit" });
   execFileSync(
     "node",
     [
       "--input-type=module",
       "-e",
-      "import('@st8craft/vitest').then(() => console.log('consumer smoke: import ok'))",
+      "import('@st8craft/core').then(() => console.log('consumer smoke: import ok'))",
     ],
     { cwd: smokeDir, stdio: "inherit" },
   );
@@ -141,16 +126,17 @@ try {
   }
 
   if (!SKIP_SMOKE) {
-    const vitestTgz = tarballsByName["@st8craft/vitest"];
-    if (!tarballListsPath(vitestTgz, "package/dist/index.js")) {
+    const coreTgz = tarballsByName["@st8craft/core"];
+    if (!coreTgz) throw new Error("Missing @st8craft/core tarball path");
+    if (!tarballListsPath(coreTgz, "package/dist/index.js")) {
       console.error(
-        "Packed @st8craft/vitest tarball is missing package/dist/index.js.\n" +
-          "Ensure each package lists \"files\": [\"dist\", ...] in package.json (dist/ is gitignored),\n" +
+        "Packed @st8craft/core tarball is missing package/dist/index.js.\n" +
+          'Ensure the package lists "files": ["dist", ...] in package.json (dist/ is gitignored),\n' +
           "and run `bun run build` before validate-publish-manifests.",
       );
       process.exit(1);
     }
-    runConsumerSmoke(tarballsByName, tmpRoot);
+    runConsumerSmoke(coreTgz, tmpRoot);
   } else {
     console.log("Skipping consumer smoke (ST8CRAFT_SKIP_CONSUMER_SMOKE=1)");
   }

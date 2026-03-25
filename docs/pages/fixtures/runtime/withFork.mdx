@@ -5,19 +5,21 @@ description: Start a local Anvil fork from a remote JSON-RPC endpoint at a pinne
 
 ## `withFork({ rpcUrl, blockNumber[, chainId, key] })`
 
+**Test runners:** Examples use Vitest `test` and `expect`. `scenario(...)` returns an async function you can pass to any runner with a similar `test` callback (for example Jest or Node `node:test`).
+
 ### Why it is useful
 Use `withFork()` to test against pinned, deterministic mainnet (or L2) state while still running locally via Anvil.
 
 ### Example
 ```ts twoslash [index.ts]
 import { test, expect } from "vitest";
-import { scenario, withFork, withFundedWallet } from "@st8craft/vitest";
+import { scenario, withFork, withFundedWallet } from "@st8craft/core";
 
 test(
   "funded wallet on pinned mainnet fork",
   scenario(
     withFork({
-      rpcUrl: process.env.RPC_URL!,
+      rpcUrl: process.env.VITE_RPC_URL!,
       blockNumber: 22_000_000n,
     }),
     withFundedWallet({ balance: 1n }),

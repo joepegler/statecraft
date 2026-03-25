@@ -1,6 +1,6 @@
 ---
 title: Quickstart
-description: Install Statecraft in a Vitest project, run a minimal withChain scenario first, then move to a pinned fork with withFork and withFundedWallet.
+description: Install Statecraft in a TypeScript test project, run a minimal withChain scenario first, then move to a pinned fork with withFork and withFundedWallet. Examples use Vitest.
 ---
 
 import * as RadixTabs from "@radix-ui/react-tabs";
@@ -28,6 +28,8 @@ import * as RadixTabs from "@radix-ui/react-tabs";
   <RadixTabs.Content value="human">
     Install Statecraft into your project as a dev dependency.
 
+    Commands below include Vitest because the docs and repo examples use it. If you use Jest, `node:test`, or another runner, install that instead and pass `scenario(...)` to your runner's `test` API.
+
     Prerequisites:
 
     - `anvil` (Foundry) available on your `PATH` (local runtime and pinned forks are powered by Anvil)
@@ -49,19 +51,19 @@ import * as RadixTabs from "@radix-ui/react-tabs";
 
       <RadixTabs.Content value="pnpm">
         ```bash
-        pnpm add -D @st8craft/vitest @pimlico/alto vitest viem
+        pnpm add -D @st8craft/core @pimlico/alto vitest viem
         ```
       </RadixTabs.Content>
 
       <RadixTabs.Content value="bun">
         ```bash
-        bun add -D @st8craft/vitest @pimlico/alto vitest viem
+        bun add -D @st8craft/core @pimlico/alto vitest viem
         ```
       </RadixTabs.Content>
 
       <RadixTabs.Content value="npm">
         ```bash
-        npm install -D @st8craft/vitest @pimlico/alto vitest viem
+        npm install -D @st8craft/core @pimlico/alto vitest viem
         ```
       </RadixTabs.Content>
     </RadixTabs.Root>

@@ -1,0 +1,51 @@
+{
+  "name": "@st8craft/core",
+  "version": "0.2.0",
+  "description": "Composable Ethereum integration-test scenarios for TypeScript and viem: runtime, clients, and fixtures in one package. Works with Vitest and other test runners.",
+  "keywords": [
+    "ethereum",
+    "vitest",
+    "jest",
+    "viem",
+    "anvil",
+    "testing",
+    "statecraft",
+    "web3"
+  ],
+  "homepage": "https://github.com/joepegler/statecraft#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/joepegler/statecraft.git",
+    "directory": "packages/core"
+  },
+  "bugs": {
+    "url": "https://github.com/joepegler/statecraft/issues"
+  },
+  "files": [
+    "dist",
+    "CHANGELOG.md"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "src": "./src/index.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "zile",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "viem": "^2.38.2"
+  },
+  "peerDependencies": {
+    "@pimlico/alto": "^0.0.20"
+  },
+  "sideEffects": false,
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts"
+}
