@@ -4,11 +4,17 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "deps:local": "node ./scripts/set-examples-deps.mjs local",
+    "deps:published": "node ./scripts/set-examples-deps.mjs published",
     "test": "vitest run",
+    "test:published": "node ./scripts/test-published.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
+  "devDependencies": {
+    "dotenv": "^17.3.1"
+  },
   "dependencies": {
-    "@st8craft/vitest": "workspace:*",
+    "@st8craft/vitest": "npm:@st8craft/vitest@latest",
     "viem": "^2.38.2"
   }
 }
