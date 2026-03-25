@@ -18,13 +18,20 @@
     "url": "https://github.com/joepegler/statecraft/issues"
   },
   "type": "module",
-  "main": "./src/index.ts",
+  "main": "./dist/index.js",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "src": "./src/index.ts",
+      "default": "./dist/index.js"
+    }
   },
   "scripts": {
     "build": "zile",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit"
-  }
+  },
+  "sideEffects": false,
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts"
 }
