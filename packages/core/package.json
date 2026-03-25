@@ -1,6 +1,6 @@
 {
   "name": "@st8craft/core",
-  "version": "0.3.0",
+  "version": "0.3.2",
   "description": "Composable Ethereum integration-test scenarios for TypeScript and viem: runtime, clients, and fixtures in one package. Works with Vitest and other test runners.",
   "license": "MIT",
   "author": {
