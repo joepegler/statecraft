@@ -1,13 +1,14 @@
 {
   "name": "statecraft",
   "private": true,
-  "description": "Composable Ethereum integration-test scenarios for Vitest and viem (monorepo).",
+  "description": "Composable Ethereum integration-test scenarios for TypeScript, viem, and common test runners (examples use Vitest).",
   "type": "module",
   "packageManager": "bun@1.2.4",
   "keywords": [
     "ethereum",
     "evm",
     "vitest",
+    "jest",
     "viem",
     "anvil",
     "testing",
@@ -25,7 +26,7 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "bun run --filter @st8craft/runtime build && bun run --filter @st8craft/clients build && bun run --filter @st8craft/scenarios build && bun run --filter @st8craft/vitest build",
+    "build": "bun run --filter @st8craft/core build",
     "changeset": "changeset",
     "docs:build": "vocs build",
     "docs:dev": "vocs dev",
@@ -35,7 +36,7 @@
     "test": "vitest run",
     "test:ci": "bun run build && vitest run",
     "test:watch": "vitest",
-    "typecheck": "bun run --workspaces typecheck",
+    "typecheck": "bun run --filter @st8craft/core typecheck && bun run --filter @st8craft/examples typecheck",
     "version-packages": "changeset version"
   },
   "devDependencies": {

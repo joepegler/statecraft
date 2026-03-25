@@ -5,6 +5,8 @@ description: Attach a caller-owned runtime handle and wire viem clients, without
 
 ## `withExternalRuntime({ runtime, clients? })`
 
+**Test runners:** Examples use Vitest `test` and `expect`. `scenario(...)` returns an async function you can pass to any runner with a similar `test` callback (for example Jest or Node `node:test`).
+
 ### Why it is useful
 Use `withExternalRuntime()` when your test suite (not the scenario) owns the Anvil lifecycle, so you can reuse one running runtime across many scenarios.
 
@@ -16,8 +18,14 @@ This enables two important patterns:
 ### Example
 ```ts twoslash [index.ts]
 import { beforeAll, afterAll, describe, test, expect } from "vitest";
-import { scenario, withExternalRuntime, withSnapshot } from "@st8craft/vitest";
-import { startRuntime, stopRuntime, type RuntimeHandle } from "@st8craft/runtime";
+import {
+  scenario,
+  startRuntime,
+  stopRuntime,
+  withExternalRuntime,
+  withSnapshot,
+  type RuntimeHandle,
+} from "@st8craft/core";
 
 let handle!: RuntimeHandle;
 let sharedBlock!: bigint;
@@ -101,5 +109,5 @@ External lifecycle, the fixture never starts or stops Anvil.
 - Add `withSnapshot()` when you want per-test rollback while reusing one external runtime handle.
 - Skip `withSnapshot()` when you intentionally want cumulative state across sequential tests in one file or `describe`.
 - Mixing both patterns in one `describe` lets you model realistic flows, cumulative checkpoints, and one-off isolated assertions without paying runtime startup cost for every test.
-- A common performance pattern is one runtime handle per test file (`beforeAll` and `afterAll`). This keeps state local to that file and still lets Vitest run different files in parallel, which can significantly reduce total suite time.
+- A common performance pattern is one runtime handle per test file (`beforeAll` and `afterAll`). This keeps state local to that file and still lets the test runner run different files in parallel, which can significantly reduce total suite time.
 

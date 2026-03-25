@@ -5,6 +5,8 @@ description: Seed an ERC-20 balance for a recipient in local/forked test state.
 
 ## `withErc20Balance({ token, amount[, to] })`
 
+**Test runners:** Examples use Vitest `test` and `expect`. `scenario(...)` returns an async function you can pass to any runner with a similar `test` callback (for example Jest or Node `node:test`).
+
 ### Why it is useful
 Use `withErc20Balance()` to seed ERC-20 balances directly in test state, so you can exercise token transfers and contract logic without writing per-test minting or impersonation boilerplate.
 
@@ -12,7 +14,7 @@ Use `withErc20Balance()` to seed ERC-20 balances directly in test state, so you 
 ```ts twoslash [index.ts]
 import { test, expect } from "vitest";
 import { erc20Abi } from "viem";
-import { scenario, withChain, withFundedWallet, withErc20Balance } from "@st8craft/vitest";
+import { scenario, withChain, withFundedWallet, withErc20Balance } from "@st8craft/core";
 
 const USDC = "0xA0b86991c6218b36c1d19D4a2e9Eb0ce3606eB48";
 

@@ -1,5 +1,5 @@
-import { createClients, type CreateClientsOptions } from "@st8craft/clients";
-import type { RuntimeHandle } from "@st8craft/runtime";
+import { createClients, type CreateClientsOptions } from "../../clients/index.js";
+import type { RuntimeHandle } from "../../runtime/index.js";
 import type { EmptyScenarioContext, ScenarioRuntimeClientsContext, ScenarioStep } from "../types.js";
 
 /**

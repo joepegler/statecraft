@@ -4,8 +4,9 @@ Opinionated operating manual for AI coding agents working in `statecraft`.
 
 ## Purpose (What this repo is)
 
-Statecraft is a TypeScript monorepo for composable Ethereum testing scenarios on Vitest.
+Statecraft is a TypeScript library (`@st8craft/core`) for composable Ethereum testing scenarios.
 It aims to eliminate ad hoc setup code by replacing it with explicit, composable `withX` fixtures.
+The repo and docs use Vitest by default; consumers can use other runners that support async test callbacks.
 
 It provides clear abstractions over:
 
@@ -44,14 +45,13 @@ It provides clear abstractions over:
 
 ## Repo Boundaries (Do not violate ownership)
 
-Runtime, clients, and scenarios have a dependency direction:
-`vitest -> scenarios -> clients -> runtime`
+Inside `packages/core`, keep a clear dependency direction when changing internals:
+`scenarios -> clients -> runtime` (public API is flat from `@st8craft/core`).
 
-- `packages/runtime`: anvil runtime lifecycle
-- `packages/clients`: viem client wiring over runtime
-- `packages/scenarios`: scenario engine + `withX` fixtures
-- `packages/vitest`: public ergonomic exports for tests
-- `packages/examples`: usage demos and scenario examples
+- `src/runtime`: anvil runtime lifecycle
+- `src/clients`: viem client wiring over runtime
+- `src/scenarios`: scenario engine + `withX` fixtures
+- `packages/examples`: private usage demos and scenario examples
 
 If a change crosses layers, keep APIs explicit and avoid hidden coupling.
 
@@ -126,7 +126,7 @@ Everything else is secondary.
 
 - Package manager: `bun` (workspace)
 - Language: TypeScript, ESM
-- Test runner: `vitest`
+- Test runner: `vitest` (default in this repo; library is not Vitest-specific)
 - Build tool in packages: `zile`
 
 From repo root:
@@ -137,8 +137,8 @@ From repo root:
 
 For tighter loops:
 
-- `bun --filter @st8craft/<pkg> test`
-- `bun --filter @st8craft/<pkg> run typecheck`
+- `bun --filter @st8craft/core test`
+- `bun --filter @st8craft/core run typecheck`
 
 ## Agent Tooling (Prompting pattern)
 
@@ -160,9 +160,9 @@ When you are unsure, read this file for the fixture rules.
 
 - Every behavior change must include or update tests.
 - Keep tests colocated with implementation when practical:
-  - fixture tests live next to each fixture in `packages/scenarios/src/fixtures` (for example `withFork.ts` with `withFork.test.ts`)
-  - scenario and utility tests live beside their source files under `packages/scenarios/src`
-  - avoid a separate `packages/scenarios/tests` directory, prefer a flat, alongside-implementation layout
+  - fixture tests live next to each fixture in `packages/core/src/scenarios/fixtures` (for example `withFork.ts` with `withFork.test.ts`)
+  - scenario and utility tests live beside their source files under `packages/core/src/scenarios`
+  - runtime and clients integration tests live under `packages/core/tests`
 - Keep tests deterministic:
   - pin fork block numbers
   - avoid wall-clock and random data unless controlled

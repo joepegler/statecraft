@@ -2,6 +2,8 @@ import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import { getAddress, parseEther } from "viem";
 import {
   scenario,
+  startRuntime,
+  stopRuntime,
   withBundler,
   withChain,
   withExternalRuntime,
@@ -11,13 +13,9 @@ import {
   withFork,
   withFundedWallet,
   withSnapshot,
-} from "@st8craft/vitest";
-import type { ContractArtifact } from "@st8craft/vitest";
-import {
-  startRuntime,
-  stopRuntime,
+  type ContractArtifact,
   type RuntimeHandle,
-} from "@st8craft/runtime";
+} from "@st8craft/core";
 import answerArtifact from "../artifacts/Answer.json";
 import { erc20Abi } from "viem";
 

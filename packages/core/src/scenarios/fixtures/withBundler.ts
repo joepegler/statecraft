@@ -1,8 +1,8 @@
 import { privateKeyToAccount, type PrivateKeyAccount } from "viem/accounts";
 import type { Address } from "viem";
 import { requireRuntimeClients } from "../utils.js";
-import type { BundlerClient } from "@st8craft/clients";
-import { createBundlerClient } from "@st8craft/clients";
+import type { BundlerClient } from "../../clients/index.js";
+import { createBundlerClient } from "../../clients/index.js";
 import type { ScenarioBundlerContext, ScenarioRuntimeClientsContext, ScenarioStep } from "../types.js";
 import { startBundler } from "../internal/startBundler.js";
 

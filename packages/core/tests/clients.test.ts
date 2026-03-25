@@ -1,8 +1,8 @@
 import { createServer } from "node:http";
 import { describe, expect, test } from "vitest";
 import { defineChain, type Address } from "viem";
-import { createClients, createBundlerClient } from "../src/index";
-import type { UserOperation } from "../src/index";
+import { createClients, createBundlerClient } from "../src/clients/index.js";
+import type { UserOperation } from "../src/clients/index.js";
 
 describe("createClients", () => {
   test("builds viem clients for a runtime handle", () => {

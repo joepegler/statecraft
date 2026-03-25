@@ -3,7 +3,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
 
-export const VITEST_PACKAGE = "@st8craft/vitest";
+export const SDK_PACKAGE = "@st8craft/core";
 export const WORKSPACE_SPEC = "workspace:*";
 
 /** @param {string} fromImportMetaUrl */
@@ -28,19 +28,19 @@ export async function writeExamplesPackageJson(packageJsonPath, pkg) {
 }
 
 /** @param {string | undefined} version e.g. "0.1.3" or "latest" */
-export function vitestSpecifierForPublished(version) {
+export function sdkSpecifierForPublished(version) {
   const v = version ?? "latest";
-  return `npm:${VITEST_PACKAGE}@${v}`;
+  return `npm:${SDK_PACKAGE}@${v}`;
 }
 
 /** @param {object} pkg @param {string} specifier */
-export function setVitestDependency(pkg, specifier) {
-  if (!pkg.dependencies?.[VITEST_PACKAGE]) {
+export function setSdkDependency(pkg, specifier) {
+  if (!pkg.dependencies?.[SDK_PACKAGE]) {
     throw new Error(
-      `Missing ${VITEST_PACKAGE} in examples package.json dependencies. Add it first.`,
+      `Missing ${SDK_PACKAGE} in examples package.json dependencies. Add it first.`,
     );
   }
-  pkg.dependencies[VITEST_PACKAGE] = specifier;
+  pkg.dependencies[SDK_PACKAGE] = specifier;
 }
 
 /**

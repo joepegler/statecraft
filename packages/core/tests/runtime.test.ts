@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { createRuntime, startRuntime, stopRuntime } from "../src/index";
+import { createRuntime, startRuntime, stopRuntime } from "../src/runtime/index.js";
 
 describe("runtime", () => {
   test("createRuntime validates fork settings", () => {

@@ -1,8 +1,5 @@
 ---
-"@st8craft/clients": patch
-"@st8craft/runtime": patch
-"@st8craft/scenarios": patch
-"@st8craft/vitest": patch
+"@st8craft/core": patch
 ---
 
 Added bundler test

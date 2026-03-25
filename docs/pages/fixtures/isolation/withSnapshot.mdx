@@ -5,6 +5,8 @@ description: Snapshot the runtime before inner steps run, then revert in a final
 
 ## withSnapshot()
 
+**Test runners:** Examples use Vitest `test` and `expect`. `scenario(...)` returns an async function you can pass to any runner with a similar `test` callback (for example Jest or Node `node:test`).
+
 ### Why it is useful
 Use `withSnapshot()` to isolate side effects inside a scenario, so changes made by inner steps are rolled back reliably.
 
@@ -14,7 +16,7 @@ If you reuse one running Anvil runtime across multiple tests in a file or `descr
 ### Example
 ```ts twoslash [index.ts]
 import { test, expect } from "vitest";
-import { scenario, withChain, withSnapshot } from "@st8craft/vitest";
+import { scenario, withChain, withSnapshot } from "@st8craft/core";
 
 test(
   "snapshot isolates chain mutations",
@@ -39,12 +41,22 @@ None; it forwards the context unchanged.
 ### Context requirements
 - Requires runtime clients on context, so it must come after a runtime source fixture like `withChain`, `withFork`, or `withExternalRuntime`.
 
-### Example (Vitest `describe`)
+### Example (suite hooks with `describe`)
+
+Uses Vitest imports; the same structure works in other runners that support `describe`, `beforeAll`, `afterAll`, and `test`.
+
 ```ts
 import { describe, beforeAll, afterAll, test, expect } from "vitest";
 import { parseEther } from "viem";
-import { scenario, withExternalRuntime, withSnapshot, withFundedWallet } from "@st8craft/vitest";
-import { startRuntime, stopRuntime, type RuntimeHandle } from "@st8craft/runtime";
+import {
+  scenario,
+  startRuntime,
+  stopRuntime,
+  withExternalRuntime,
+  withSnapshot,
+  withFundedWallet,
+  type RuntimeHandle,
+} from "@st8craft/core";
 
 let handle!: RuntimeHandle;
 

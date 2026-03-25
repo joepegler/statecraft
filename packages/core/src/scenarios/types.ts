@@ -1,5 +1,5 @@
-import type { RuntimeHandle } from "@st8craft/runtime";
-import type { BundlerClient } from "@st8craft/clients";
+import type { RuntimeHandle } from "../runtime/index.js";
+import type { BundlerClient } from "../clients/index.js";
 import type {
   PublicClient,
   WalletClient,
