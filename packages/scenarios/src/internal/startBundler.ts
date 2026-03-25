@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join, dirname, resolve } from "node:path";
 import { spawn, type ChildProcessByStdio } from "node:child_process";
 import { createRequire } from "node:module";
+import { fileURLToPath } from "node:url";
 import type { Address } from "viem";
 
 export type StartBundlerResult = {
@@ -97,9 +98,12 @@ function resolveAltoCliPath(): string {
     throw new Error(message, { cause: err as any });
   }
 
-  const resolvedPath = resolved.startsWith("file:") ? resolved.slice("file:".length) : resolved;
-  const pkgDir = dirname(resolvedPath); // .../esm (or similar)
-  const cliPath = resolve(pkgDir, "../cli/alto.js");
+  const resolvedPath = resolved.startsWith("file:")
+    ? fileURLToPath(resolved)
+    : resolved;
+  const pkgDir = dirname(resolvedPath); // .../esm (package "import" entry)
+  // `package.json` bin is `./esm/cli/alto.js`, next to the resolved module dir.
+  const cliPath = resolve(pkgDir, "cli/alto.js");
   return cliPath;
 }
 
