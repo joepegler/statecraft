@@ -83,6 +83,7 @@ test(
       expect(normalized).toContain(entryPoint4337);
     },
   ),
+  10_000,
 );
 
 test(

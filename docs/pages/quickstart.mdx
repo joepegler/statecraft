@@ -1,94 +1,113 @@
 ---
 title: Quickstart
-description: Install Statecraft in a TypeScript test project, run a minimal withChain scenario first, then move to a pinned fork with withFork and withFundedWallet. Examples use Vitest.
+description: Install Statecraft, run a minimal local test with withChain, then move to pinned forks with withFork.
 ---
 
 import * as RadixTabs from "@radix-ui/react-tabs";
 
 # Quickstart
 
+## Prerequisites (local execution)
+
+Statecraft runs local EVM instances via Anvil (Foundry). `withChain()` and `withFork()` both start an Anvil runtime, so `anvil` must be available on your `PATH`.
+
+If you do not have Foundry installed yet:
+
+```bash
+curl -L https://foundry.paradigm.xyz | bash
+```
+
 ## Install
 
-<RadixTabs.Root defaultValue="agent" className="quickstartTabs">
-  <RadixTabs.List aria-label="Quickstart install mode">
-    <RadixTabs.Trigger value="agent">agent</RadixTabs.Trigger>
-    <RadixTabs.Trigger value="human">human</RadixTabs.Trigger>
+Choose a package manager:
+
+<RadixTabs.Root defaultValue="bun" className="quickstartPkgTabs">
+  <RadixTabs.List aria-label="Package manager">
+    <RadixTabs.Trigger value="pnpm">pnpm</RadixTabs.Trigger>
+    <RadixTabs.Trigger value="bun">bun</RadixTabs.Trigger>
+    <RadixTabs.Trigger value="npm">npm</RadixTabs.Trigger>
   </RadixTabs.List>
 
-  <RadixTabs.Content value="agent">
-    Fetch the terminal-friendly setup checklist:
-
+  <RadixTabs.Content value="pnpm">
     ```bash
-    Read https://statecraft.services/skill.md and set up statecraft
+    pnpm add -D @st8craft/core vitest viem
     ```
-
-    Run the checklist commands in your project directory.
   </RadixTabs.Content>
 
-  <RadixTabs.Content value="human">
-    Install Statecraft into your project as a dev dependency.
-
-    Commands below include Vitest because the docs and repo examples use it. If you use Jest, `node:test`, or another runner, install that instead and pass `scenario(...)` to your runner's `test` API.
-
-    Prerequisites:
-
-    - `anvil` (Foundry) available on your `PATH` (local runtime and pinned forks are powered by Anvil)
-
-    If you do not have Anvil yet, install Foundry:
-
+  <RadixTabs.Content value="bun">
     ```bash
-    curl -L https://foundry.paradigm.xyz | bash
+    bun add -D @st8craft/core vitest viem
     ```
+  </RadixTabs.Content>
 
-    Choose one package manager:
-
-    <RadixTabs.Root defaultValue="bun" className="quickstartPkgTabs">
-      <RadixTabs.List aria-label="Package manager">
-        <RadixTabs.Trigger value="pnpm">pnpm</RadixTabs.Trigger>
-        <RadixTabs.Trigger value="bun">bun</RadixTabs.Trigger>
-        <RadixTabs.Trigger value="npm">npm</RadixTabs.Trigger>
-      </RadixTabs.List>
-
-      <RadixTabs.Content value="pnpm">
-        ```bash
-        pnpm add -D @st8craft/core @pimlico/alto vitest viem
-        ```
-      </RadixTabs.Content>
-
-      <RadixTabs.Content value="bun">
-        ```bash
-        bun add -D @st8craft/core @pimlico/alto vitest viem
-        ```
-      </RadixTabs.Content>
-
-      <RadixTabs.Content value="npm">
-        ```bash
-        npm install -D @st8craft/core @pimlico/alto vitest viem
-        ```
-      </RadixTabs.Content>
-    </RadixTabs.Root>
+  <RadixTabs.Content value="npm">
+    ```bash
+    npm install -D @st8craft/core vitest viem
+    ```
   </RadixTabs.Content>
 </RadixTabs.Root>
 
-## Next steps
+## Create a minimal test
 
-To switch from local chain to a deterministic mainnet state, use `withFork({ rpcUrl, blockNumber })`, and keep `blockNumber` pinned to a specific bigint literal.
+Create `tests/quickstart.test.ts`:
 
-`packages/examples/examples/scenarios.test.ts` includes:
+```ts
+import { test, expect } from "vitest";
+import { parseEther } from "viem";
+import { scenario, withChain, withFundedWallet } from "@st8craft/core";
 
-- fresh local chain + funded wallet
-- forked mainnet + funded wallet + real contract call
-- forked mainnet + funded wallet + USDC via `withFundedWallet.erc20` or `withErc20Balance`
-- runtime bytecode injection with `withContracts`
-- real deployment flow with `withDeployments`
-- suite-scoped runtime reuse with `withExternalRuntime` plus `withSnapshot`
+test(
+  "funded wallet on local chain",
+  scenario(
+    withChain(),
+    withFundedWallet({ balance: parseEther("1") }),
+    async ({ publicClient, wallet }) => {
+      const balance = await publicClient.getBalance({
+        address: wallet,
+      });
 
-When you are ready for fixture ordering, lifecycle terminology (managed vs external), and typing behavior, read [Overview](/overview).
+      expect(balance).toBe(parseEther("1"));
+    },
+  ),
+);
+```
 
-For parameter-level docs and examples of token seeding, contract setup, and isolation, see the fixture reference pages:
+## Run it
 
-- [Runtime source fixtures](/fixtures/runtime)
-- [Wallets & balance fixtures](/fixtures/wallets)
-- [Tokens & ERC-20 fixtures](/fixtures/tokens)
-- [Contracts & deployment fixtures](/fixtures/contracts)
-- [Isolation fixtures](/fixtures/isolation)
+Run:
+
+```bash
+bunx vitest run tests/quickstart.test.ts
+```
+
+## What happened (and what success looks like)
+
+This test starts a fresh local Anvil chain, funds a scenario wallet with `withFundedWallet`, reads the wallet balance with `publicClient.getBalance`, and asserts it.
+
+Success looks like a passing Vitest run for `funded wallet on local chain`.
+
+## Troubleshooting
+
+- `anvil: command not found`: install Foundry (which provides `anvil`), then restart your terminal so your `PATH` updates.
+- RPC URL is missing (fork setup): set `VITE_RPC_URL` (or replace `process.env.VITE_RPC_URL!` with your own env var) before running the fork example.
+- Fork block is not deterministic: keep `blockNumber` pinned as a bigint literal (for example `22_000_000n`). Avoid passing a plain number.
+
+## Expected output
+
+When it works, Vitest should exit with code `0` and show a passing test named `funded wallet on local chain`.
+
+## Next step: pinned fork state
+
+When you want deterministic mainnet (or L2) state, set an RPC URL (for example `VITE_RPC_URL`), then replace `withChain()` with:
+
+```ts
+withFork({
+  rpcUrl: process.env.VITE_RPC_URL!,
+  blockNumber: 22_000_000n,
+});
+```
+
+Keep `blockNumber` pinned to a bigint literal. Then continue with:
+- [Overview](/overview)
+- [withFork](/fixtures/runtime/withFork)
+- [Wallet fixtures](/fixtures/wallets)

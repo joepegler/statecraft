@@ -28,6 +28,8 @@ Optional for fork tests:
 
 - set VITE_RPC_URL to a reachable HTTP RPC endpoint
 - pin blockNumber as a bigint literal
+- if running fork tests on GitHub Actions, add the `Setup Foundry` step (example:
+  https://github.com/joepegler/statecraft/blob/dev/.github/workflows/sdk-tests.yml#L30-L32)
 
 Create a compile-check test file named statecraft.try.test.ts with (Vitest shown; adapt imports to your runner):
 

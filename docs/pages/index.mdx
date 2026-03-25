@@ -24,6 +24,7 @@ import { HomePage, Button } from "vocs/components";
     <a href="/fixtures/runtime/withExternalRuntime">withExternalRuntime</a> when a file should share one runtime across sequential tests,
     while separate files still run in parallel on their own runtime instances for faster suites.
     Doc examples use Vitest; pass `scenario(...)` to any runner that supports async test callbacks.
+    Release verification, including CI build/test checks and npm tarball validation, is documented in <a href="https://github.com/joepegler/statecraft#release-verification">README.md</a>.
   </HomePage.Description>
   <HomePage.Buttons>
     <HomePage.Button href="/quickstart" variant="accent">
@@ -48,70 +49,22 @@ import { HomePage, Button } from "vocs/components";
     }}
   >
 
-    :::code-group
-    ```ts [index.ts]
-    import { test, expect } from "vitest";
-    import { erc20Abi, parseEther } from "viem";
-    import {
-      scenario,
-      withChain,
-      withDeployments,
-      withErc20Balance,
-      withFundedWallet,
-      withBundler,
-    } from "@st8craft/core";
-
-    import { answerArtifact, USDC } from "./config.js";
+    ```ts
+    import { expect, test } from "vitest";
+    import { parseEther } from "viem";
+    import { scenario, withChain, withFundedWallet } from "@st8craft/core";
 
     test(
-      "funded wallet has ETH, USDC, and a deployed contract",
+      "funded wallet starts with 1 ETH",
       scenario(
         withChain(),
         withFundedWallet({ balance: parseEther("1") }),
-        withDeployments({
-          answer: {
-            artifact: answerArtifact,
-            args: [],
-          },
-        }),
-        withErc20Balance({
-          token: USDC,
-          amount: 1_000_000n,
-        }),
-        withBundler(),
-        async ({ publicClient, walletClient, deployments, bundlerClient }) => {
-          const ethBalance = await publicClient.getBalance({ address: walletClient.address });
-          // Smoke test: proves fixture wiring.
-          expect(ethBalance).toEqual(parseEther("1"));
+        async ({ publicClient, walletClient }) => {
+          const balance = await publicClient.getBalance({ address: walletClient.address });
+          expect(balance).toBe(parseEther("1"));
         },
       ),
     );
     ```
-
-    ```ts [config.ts]
-    export const USDC = "0xA0b86991c6218b36c1d19D4a2e9Eb0ce3606eB48";
-
-    export const answerArtifact = {
-      abi: [
-        {
-          type: "function",
-          name: "answer",
-          stateMutability: "view",
-          inputs: [],
-          outputs: [
-            {
-              name: "",
-              type: "uint256",
-              internalType: "uint256",
-            },
-          ],
-        },
-      ],
-      bytecode: {
-        object: "0x600a600c600039600a6000f3602a60005260206000f3",
-      },
-    };
-    ```
-    :::
   </div>
 </div>

@@ -13,14 +13,17 @@ Use `withBundler()` to enable ERC-4337 flows against a local bundler that is wir
 ### Example
 ```ts twoslash [index.ts]
 import { test, expect } from "vitest";
-import { scenario, withChain, withBundler } from "@st8craft/core";
+import { scenario, withFork, withBundler } from "@st8craft/core";
 
 const ENTRY_POINT = "0x0576a174D229E3cFA37253523E645A78A0C91B57";
 
 test(
   "bundler wiring is exposed in scenario context",
   scenario(
-    withChain(),
+    withFork({
+      rpcUrl: process.env.VITE_RPC_URL!,
+      blockNumber: 22_000_000n,
+    }),
     withBundler({ entryPoint: ENTRY_POINT, mode: "alto" }),
     async ({ entryPoint }) => {
       expect(entryPoint).toBe(ENTRY_POINT);
@@ -41,7 +44,7 @@ test(
 - `entryPoint`
 
 ### Context requirements
-- Requires runtime + `ctx.testClient` from `withChain` / `withFork` / `withExternalRuntime`.
+- Requires runtime + `ctx.testClient` from `withFork` / `withExternalRuntime`.
 - Expects the host project to have the peer dependency used by Alto (`@pimlico/alto`). Docs examples are type-checked, not executed here.
 
 ### Lifecycle
