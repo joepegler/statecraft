@@ -1,7 +1,7 @@
 ---
 layout: landing
-title: Deterministic Ethereum integration testing for Vitest and viem
-description: Statecraft is a composable scenario runtime for TypeScript EVM tests. Build explicit setup with withChain, withFork, withFundedWallet, and related fixtures so test bodies stay focused on behavior.
+title: Deterministic Ethereum integration testing for TypeScript and viem
+description: Statecraft is a composable scenario runtime for TypeScript EVM tests. Build explicit setup with withChain, withFork, withFundedWallet, and related fixtures so test bodies stay focused on behavior. Examples use Vitest; other test runners work too.
 ---
 
 import { HomePage, Button } from "vocs/components";
@@ -13,7 +13,7 @@ import { HomePage, Button } from "vocs/components";
     style={{ width: 78, height: 78, borderRadius: 18 }}
   />
   <HomePage.Tagline>
-    Ethereum tests in Vitest, without setup glue code.
+    Ethereum integration tests without setup glue code.
   </HomePage.Tagline>
   <HomePage.Description>
     Statecraft wraps viem + Anvil into helpers like{" "}
@@ -23,6 +23,7 @@ import { HomePage, Button } from "vocs/components";
     <a href="https://docs.pimlico.io/infra/bundler">withBundler</a> for ERC-4337 bundling. Use{" "}
     <a href="/fixtures/runtime/withExternalRuntime">withExternalRuntime</a> when a file should share one runtime across sequential tests,
     while separate files still run in parallel on their own runtime instances for faster suites.
+    Doc examples use Vitest; pass `scenario(...)` to any runner that supports async test callbacks.
   </HomePage.Description>
   <HomePage.Buttons>
     <HomePage.Button href="/quickstart" variant="accent">

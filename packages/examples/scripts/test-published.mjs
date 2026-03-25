@@ -30,7 +30,11 @@ let restoreFailed = false;
 
 try {
   await runCommand("bun", ["install"], repoRoot);
-  await runCommand("bun", ["--filter", "@st8craft/examples", "test"], repoRoot);
+  await runCommand(
+    "bun",
+    ["run", "--filter", "@st8craft/examples", "test:with-published-core"],
+    repoRoot,
+  );
 } finally {
   try {
     const restoreJson = await readExamplesPackageJson(packageJsonPath);

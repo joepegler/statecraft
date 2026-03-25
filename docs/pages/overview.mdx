@@ -15,7 +15,7 @@ Statecraft replaces that with composable `withX` fixtures. Every test declares i
 
 ## The Core Abstraction
 
-`scenario(...steps, testFn)` composes fixtures in order and returns a Vitest-compatible async test function.
+`scenario(...steps, testFn)` composes fixtures in order and returns an async function suitable as a test body. Doc examples wrap it with Vitest `test`; you can use any runner that accepts an async test callback (for example Jest or Node `node:test`).
 
 Each fixture:
 
@@ -24,6 +24,8 @@ Each fixture:
 3. calls `next(updatedCtx)` once
 
 ## A Concrete Scenario Example
+
+The snippet below imports Vitest. The same `scenario(...)` return value works with other runners.
 
 ```ts twoslash
 import { test, expect } from "vitest";
@@ -83,7 +85,7 @@ When you reuse a suite-scoped runtime with `withExternalRuntime`, you can pick o
 - Per-test rollback: use `withSnapshot()` in each scenario, so every test starts from the same baseline.
 - Shared evolving state: skip `withSnapshot()` so sequential tests in one file can build on previous mutations.
 
-In practice, teams often run one runtime per file with `beforeAll` and `afterAll`, then choose either model per scenario. This gives you explicit control over state sharing inside a file while still allowing Vitest to execute different files in parallel on separate runtime instances.
+In practice, teams often run one runtime per file with `beforeAll` and `afterAll`, then choose either model per scenario. This gives you explicit control over state sharing inside a file while still allowing the test runner to execute different files in parallel on separate runtime instances.
 
 ## Where to go next
 

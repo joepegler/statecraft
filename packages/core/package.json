@@ -1,10 +1,11 @@
 {
   "name": "@st8craft/core",
   "version": "0.2.0",
-  "description": "Composable Ethereum integration-test scenarios for Vitest and viem: runtime, clients, and fixtures in one package.",
+  "description": "Composable Ethereum integration-test scenarios for TypeScript and viem: runtime, clients, and fixtures in one package. Works with Vitest and other test runners.",
   "keywords": [
     "ethereum",
     "vitest",
+    "jest",
     "viem",
     "anvil",
     "testing",

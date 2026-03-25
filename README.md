@@ -1,8 +1,8 @@
-Statecraft makes Ethereum integration tests deterministic and composable in Vitest.
+Statecraft makes Ethereum integration tests deterministic and composable in TypeScript.
 
 Most suites start clean, then degrade into hidden setup, flaky fork state, and copy-pasted helper stacks. Statecraft gives you one explicit scenario pipeline so each test declares its environment up front.
 
-If you already use Vitest + viem + Anvil, Statecraft is not a replacement for those tools. It is a testing primitive for composing setup safely and repeatably.
+If you already use viem + Anvil with a JavaScript test runner, Statecraft is not a replacement for those tools. It is a testing primitive for composing setup safely and repeatably. Examples below use Vitest; `scenario(...)` returns an async function you can pass to other runners (Jest, Node `node:test`, and similar).
 
 ## Before vs After
 
@@ -97,7 +97,7 @@ test(
 
 ## Core Primitives
 
-- `scenario(...steps, testFn)`: composes setup steps into one Vitest-compatible test.
+- `scenario(...steps, testFn)`: composes setup steps into one async test function (examples wrap it with Vitest `test`).
 - `withChain()`: starts a fresh local Anvil runtime.
 - `withFork({ rpcUrl, blockNumber })`: starts a pinned local fork for deterministic mainnet state.
 - `withFundedWallet({ balance, erc20? })`: creates and funds a test wallet.

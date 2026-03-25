@@ -5,6 +5,8 @@ description: Create a funded scenario account, optionally seeding ERC-20 balance
 
 ## `withFundedWallet({ balance[, privateKey, erc20] })`
 
+**Test runners:** Examples use Vitest `test` and `expect`. `scenario(...)` returns an async function you can pass to any runner with a similar `test` callback (for example Jest or Node `node:test`).
+
 ### Why it is useful
 Use `withFundedWallet()` to get a ready-to-sign scenario account and deterministic ETH (and optional ERC-20) balances, so your test body focuses on behavior instead of setup glue code.
 

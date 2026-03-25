@@ -7,6 +7,7 @@
     "deps:local": "node ./scripts/set-examples-deps.mjs local",
     "deps:published": "node ./scripts/set-examples-deps.mjs published",
     "test": "vitest run",
+    "test:with-published-core": "vitest run --config vitest.published.config.ts",
     "test:published": "node ./scripts/test-published.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },

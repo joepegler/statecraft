@@ -1,13 +1,14 @@
 {
   "name": "statecraft",
   "private": true,
-  "description": "Composable Ethereum integration-test scenarios for Vitest and viem.",
+  "description": "Composable Ethereum integration-test scenarios for TypeScript, viem, and common test runners (examples use Vitest).",
   "type": "module",
   "packageManager": "bun@1.2.4",
   "keywords": [
     "ethereum",
     "evm",
     "vitest",
+    "jest",
     "viem",
     "anvil",
     "testing",

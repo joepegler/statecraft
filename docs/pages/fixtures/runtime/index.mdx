@@ -5,6 +5,8 @@ description: Start or attach an Anvil runtime and wire viem clients with withCha
 
 # Runtime Source Fixtures
 
+**Test runners:** Examples in this section use Vitest. `scenario(...)` returns an async function compatible with other `test(...)`-style runners (for example Jest or Node `node:test`).
+
 Statecraft scenarios require a runtime and viem clients. These fixtures provide the base runtime context and are generally mutually exclusive in normal scenarios.
 
 Use exactly one of `withChain`, `withFork`, or `withExternalRuntime` as your base runtime step. Everything else (wallet funding, ERC-20 seeding, contracts, and isolation) assumes this base step exists.

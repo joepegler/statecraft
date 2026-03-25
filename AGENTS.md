@@ -4,8 +4,9 @@ Opinionated operating manual for AI coding agents working in `statecraft`.
 
 ## Purpose (What this repo is)
 
-Statecraft is a TypeScript library (`@st8craft/core`) for composable Ethereum testing scenarios on Vitest.
+Statecraft is a TypeScript library (`@st8craft/core`) for composable Ethereum testing scenarios.
 It aims to eliminate ad hoc setup code by replacing it with explicit, composable `withX` fixtures.
+The repo and docs use Vitest by default; consumers can use other runners that support async test callbacks.
 
 It provides clear abstractions over:
 
@@ -125,7 +126,7 @@ Everything else is secondary.
 
 - Package manager: `bun` (workspace)
 - Language: TypeScript, ESM
-- Test runner: `vitest`
+- Test runner: `vitest` (default in this repo; library is not Vitest-specific)
 - Build tool in packages: `zile`
 
 From repo root:

@@ -5,6 +5,8 @@ description: Inject runtime bytecode at fixed addresses (test-only) with optiona
 
 ## `withContracts({ ... })`
 
+**Test runners:** Examples use Vitest `test` and `expect`. `scenario(...)` returns an async function you can pass to any runner with a similar `test` callback (for example Jest or Node `node:test`).
+
 ### Why it is useful
 Use `withContracts()` when you want fast, deterministic contract setup at known addresses, without running constructors or worrying about deployment ordering.
 
