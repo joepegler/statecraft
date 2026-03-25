@@ -6,8 +6,8 @@ import type {
   DeploymentRecord,
   ScenarioRuntimeClientsContext,
   ScenarioStep,
-} from "../types";
-import { extractBytecode, requireRuntimeClients } from "../utils";
+} from "../types.js";
+import { extractBytecode, requireRuntimeClients } from "../utils.js";
 
 /**
  * Declares one contract to deploy via `walletClient.deployContract` in declaration order.

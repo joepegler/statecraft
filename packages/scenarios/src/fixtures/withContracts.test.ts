@@ -1,6 +1,6 @@
 import { describe, expect, test, vi } from "vitest";
 import type { Hex } from "viem";
-import { withContracts } from "./withContracts";
+import { withContracts } from "./withContracts.js";
 
 const { getContract } = vi.hoisted(() => ({
   getContract: vi.fn(),

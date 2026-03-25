@@ -31,7 +31,9 @@
     "docs:dev": "vocs dev",
     "docs:preview": "vocs preview",
     "release": "changeset publish",
+    "validate-publish-manifests": "node scripts/validate-publish-manifests.mjs",
     "test": "vitest run",
+    "test:ci": "bun run build && vitest run",
     "test:watch": "vitest",
     "typecheck": "bun run --workspaces typecheck",
     "version-packages": "changeset version"

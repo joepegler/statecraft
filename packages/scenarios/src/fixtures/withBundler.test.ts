@@ -6,12 +6,12 @@ const ENTRYPOINT = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789" as Address;
 const startBundler = vi.fn();
 const createBundlerClient = vi.fn();
 
-vi.mock("../internal/startBundler", () => ({ startBundler }));
+vi.mock("../internal/startBundler.js", () => ({ startBundler }));
 vi.mock("@st8craft/clients", () => ({ createBundlerClient }));
 
 describe("withBundler", () => {
   test("throws when runtime clients are missing", async () => {
-    const { withBundler } = await import("./withBundler");
+    const { withBundler } = await import("./withBundler.js");
 
     const step = withBundler({ entryPoint: ENTRYPOINT });
 
@@ -38,7 +38,7 @@ describe("withBundler", () => {
       getUserOperationReceipt: vi.fn(async () => null),
     });
 
-    const { withBundler } = await import("./withBundler");
+    const { withBundler } = await import("./withBundler.js");
 
     const ctx = {
       runtime: { rpcUrl: "http://127.0.0.1:8545" },
@@ -73,7 +73,7 @@ describe("withBundler", () => {
       getUserOperationReceipt: vi.fn(async () => null),
     });
 
-    const { withBundler } = await import("./withBundler");
+    const { withBundler } = await import("./withBundler.js");
 
     const ctx = {
       runtime: { rpcUrl: "http://127.0.0.1:8545" },
@@ -93,7 +93,7 @@ describe("withBundler", () => {
   });
 
   test("rejects unknown bundler mode", async () => {
-    const { withBundler } = await import("./withBundler");
+    const { withBundler } = await import("./withBundler.js");
 
     const step = withBundler({ entryPoint: ENTRYPOINT, mode: "alto" as any });
     expect(step).toBeDefined();

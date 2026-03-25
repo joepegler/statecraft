@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { withErc20Balance } from "./withErc20Balance";
+import { withErc20Balance } from "./withErc20Balance.js";
 
 const USDC_MAINNET = "0xA0b86991c6218b36c1d19D4a2e9Eb0ce3606eB48" as const;
 

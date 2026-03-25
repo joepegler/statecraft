@@ -5,8 +5,8 @@ import type {
   ScenarioContracts,
   ScenarioRuntimeClientsContext,
   ScenarioStep,
-} from "../types";
-import { extractBytecode, requireRuntimeClients } from "../utils";
+} from "../types.js";
+import { extractBytecode, requireRuntimeClients } from "../utils.js";
 
 /**
  * Injects bytecode at a fixed address and optionally exposes a viem contract client on context.

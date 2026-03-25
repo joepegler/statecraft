@@ -1,5 +1,5 @@
-import type { ScenarioRuntimeClientsContext, ScenarioStep } from "../types";
-import { requireRuntimeClients } from "../utils";
+import type { ScenarioRuntimeClientsContext, ScenarioStep } from "../types.js";
+import { requireRuntimeClients } from "../utils.js";
 
 /**
  * Middleware: takes an anvil snapshot before `next`, then reverts to it in `finally`
