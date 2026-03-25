@@ -1,5 +1,17 @@
 # @st8craft/core
 
+## 0.3.2
+
+### Patch Changes
+
+- Repo sugar
+
+## 0.3.0
+
+### Minor Changes
+
+- Updated landing pages
+
 ## 0.2.1
 
 ### Patch Changes
