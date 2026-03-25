@@ -35,6 +35,9 @@ jobs:
       - name: Build packages
         run: bun run build
 
+      - name: Validate publish manifests
+        run: bun run validate-publish-manifests
+
       - name: Create release PR or publish
         uses: changesets/action@v1
         with:

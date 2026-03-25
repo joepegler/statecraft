@@ -3,7 +3,7 @@ import type {
   ScenarioContext,
   ScenarioStep,
   ScenarioTest,
-} from "./types";
+} from "./types.js";
 
 function compose(steps: ScenarioStep<ScenarioContext, ScenarioContext>[], testFn: ScenarioTest<ScenarioContext>): (ctx: ScenarioContext) => Promise<void> {
   return async function run(ctx: ScenarioContext): Promise<void> {

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { withDeployments } from "./withDeployments";
+import { withDeployments } from "./withDeployments.js";
 
 const { getContract } = vi.hoisted(() => ({
   getContract: vi.fn(),

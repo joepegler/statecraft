@@ -1,6 +1,6 @@
 {
   "name": "@st8craft/runtime",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Local Ethereum execution-node lifecycle (Anvil) for Statecraft tests.",
   "keywords": [
     "ethereum",
@@ -17,6 +17,10 @@
   "bugs": {
     "url": "https://github.com/joepegler/statecraft/issues"
   },
+  "files": [
+    "dist",
+    "CHANGELOG.md"
+  ],
   "type": "module",
   "main": "./dist/index.js",
   "exports": {

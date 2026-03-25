@@ -1,7 +1,7 @@
 import type { Address } from "viem";
-import type { ScenarioContext, ScenarioFundedWalletContext, ScenarioRuntimeClientsContext, ScenarioStep } from "../types";
-import { dealErc20Balance } from "../internal/dealErc20Balance";
-import { requireRuntimeClients } from "../utils";
+import type { ScenarioContext, ScenarioFundedWalletContext, ScenarioRuntimeClientsContext, ScenarioStep } from "../types.js";
+import { dealErc20Balance } from "../internal/dealErc20Balance.js";
+import { requireRuntimeClients } from "../utils.js";
 
 /**
  * Options for {@link withErc20Balance}: seeds an ERC-20 balance in local/forked test state.

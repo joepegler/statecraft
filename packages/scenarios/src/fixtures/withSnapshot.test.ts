@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from "vitest";
-import { withSnapshot } from "./withSnapshot";
+import { withSnapshot } from "./withSnapshot.js";
 
 describe("withSnapshot", () => {
   test("throws when runtime clients are missing", async () => {

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { Hex } from "viem";
-import type { ScenarioFundedWalletContext } from "../types";
-import { withFundedWallet } from "./withFundedWallet";
+import type { ScenarioFundedWalletContext } from "../types.js";
+import { withFundedWallet } from "./withFundedWallet.js";
 
 const { createWalletClient, http, generatePrivateKey, privateKeyToAccount, dealErc20Balance } = vi.hoisted(() => ({
   createWalletClient: vi.fn(),
@@ -29,7 +29,7 @@ vi.mock("viem/accounts", async (importOriginal) => {
   };
 });
 
-vi.mock("../internal/dealErc20Balance", () => ({
+vi.mock("../internal/dealErc20Balance.js", () => ({
   dealErc20Balance,
 }));
 

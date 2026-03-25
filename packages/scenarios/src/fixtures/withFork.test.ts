@@ -19,7 +19,7 @@ describe("withFork", () => {
   });
 
   test("throws when rpcUrl is missing", async () => {
-    const { withFork } = await import("./withFork");
+    const { withFork } = await import("./withFork.js");
     const step = withFork({ rpcUrl: "", blockNumber: 1n });
 
     await expect(
@@ -30,7 +30,7 @@ describe("withFork", () => {
   });
 
   test("throws when blockNumber is missing", async () => {
-    const { withFork } = await import("./withFork");
+    const { withFork } = await import("./withFork.js");
     const step = withFork({
       rpcUrl: "https://eth-mainnet.example",
       blockNumber: undefined as unknown as bigint,
@@ -53,7 +53,7 @@ describe("withFork", () => {
     startRuntime.mockResolvedValue(runtime);
     createClients.mockReturnValue(clients);
 
-    const { withFork } = await import("./withFork");
+    const { withFork } = await import("./withFork.js");
     const step = withFork({
       rpcUrl: "https://eth-mainnet.example",
       blockNumber: 20_000_000n,

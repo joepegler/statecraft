@@ -28,7 +28,7 @@ describe("withChain", () => {
     startRuntime.mockResolvedValue(runtime);
     createClients.mockReturnValue(clients);
 
-    const { withChain } = await import("./withChain");
+    const { withChain } = await import("./withChain.js");
     const step = withChain({ chainId: 31337, key: "suite" });
 
     const next = vi.fn(async (nextCtx: any) => {
@@ -59,7 +59,7 @@ describe("withChain", () => {
       testClient: {},
     });
 
-    const { withChain } = await import("./withChain");
+    const { withChain } = await import("./withChain.js");
     const step = withChain();
 
     await expect(
