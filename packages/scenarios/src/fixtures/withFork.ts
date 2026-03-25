@@ -1,5 +1,5 @@
-import { startRuntime, stopRuntime } from "@statecraft/runtime";
-import { createClients } from "@statecraft/clients";
+import { startRuntime, stopRuntime } from "@st8craft/runtime";
+import { createClients } from "@st8craft/clients";
 import type { EmptyScenarioContext, ScenarioRuntimeClientsContext, ScenarioStep } from "../types";
 
 /** Options for an anvil instance forked from a remote JSON-RPC endpoint at a pinned block. */

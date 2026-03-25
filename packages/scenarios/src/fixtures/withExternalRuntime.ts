@@ -1,5 +1,5 @@
-import { createClients, type CreateClientsOptions } from "@statecraft/clients";
-import type { RuntimeHandle } from "@statecraft/runtime";
+import { createClients, type CreateClientsOptions } from "@st8craft/clients";
+import type { RuntimeHandle } from "@st8craft/runtime";
 import type { EmptyScenarioContext, ScenarioRuntimeClientsContext, ScenarioStep } from "../types";
 
 /**

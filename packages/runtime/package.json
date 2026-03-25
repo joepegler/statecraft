@@ -1,5 +1,5 @@
 {
-  "name": "@statecraft/runtime",
+  "name": "@st8craft/runtime",
   "version": "0.1.0",
   "description": "Local Ethereum execution-node lifecycle (Anvil) for Statecraft tests.",
   "keywords": [

@@ -16,7 +16,7 @@ import {
   type WalletClient,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import type { RuntimeHandle } from "@statecraft/runtime";
+import type { RuntimeHandle } from "@st8craft/runtime";
 
 const DEFAULT_CHAIN_ID = 31_337;
 const DEFAULT_PRIVATE_KEY = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";

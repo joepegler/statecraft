@@ -14,7 +14,7 @@ If you reuse one running Anvil runtime across multiple tests in a file or `descr
 ### Example
 ```ts twoslash [index.ts]
 import { test, expect } from "vitest";
-import { scenario, withChain, withSnapshot } from "@statecraft/vitest";
+import { scenario, withChain, withSnapshot } from "@st8craft/vitest";
 
 test(
   "snapshot isolates chain mutations",
@@ -43,8 +43,8 @@ None; it forwards the context unchanged.
 ```ts
 import { describe, beforeAll, afterAll, test, expect } from "vitest";
 import { parseEther } from "viem";
-import { scenario, withExternalRuntime, withSnapshot, withFundedWallet } from "@statecraft/vitest";
-import { startRuntime, stopRuntime, type RuntimeHandle } from "@statecraft/runtime";
+import { scenario, withExternalRuntime, withSnapshot, withFundedWallet } from "@st8craft/vitest";
+import { startRuntime, stopRuntime, type RuntimeHandle } from "@st8craft/runtime";
 
 let handle!: RuntimeHandle;
 

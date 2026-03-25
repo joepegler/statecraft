@@ -1,5 +1,5 @@
 {
-  "name": "@statecraft/clients",
+  "name": "@st8craft/clients",
   "version": "0.1.0",
   "description": "Viem publicClient, walletClient, and testClient wiring over Statecraft runtimes.",
   "keywords": [
@@ -32,7 +32,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@statecraft/runtime": "workspace:*",
+    "@st8craft/runtime": "workspace:*",
     "viem": "^2.38.2"
   },
   "sideEffects": false,

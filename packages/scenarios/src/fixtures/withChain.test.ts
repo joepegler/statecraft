@@ -4,12 +4,12 @@ const startRuntime = vi.fn();
 const stopRuntime = vi.fn();
 const createClients = vi.fn();
 
-vi.mock("@statecraft/runtime", () => ({
+vi.mock("@st8craft/runtime", () => ({
   startRuntime,
   stopRuntime,
 }));
 
-vi.mock("@statecraft/clients", () => ({
+vi.mock("@st8craft/clients", () => ({
   createClients,
 }));
 

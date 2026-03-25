@@ -18,7 +18,7 @@ import {
   withFork,
   withFundedWallet,
   withErc20Balance,
-} from "@statecraft/vitest";
+} from "@st8craft/vitest";
 
 const USDC_MAINNET = "0xA0b86991c6218b36c1d19D4a2e9Eb0ce3606eB48" as const;
 
@@ -71,14 +71,14 @@ Ensure `anvil` is available on your `PATH`.
 ### Install
 
 ```bash
-bun add -D @statecraft/vitest
+bun add -D @st8craft/vitest
 ```
 
 ### Create a local chain scenario
 
 ```ts
 import { test, expect } from "vitest";
-import { scenario, withChain, withFundedWallet } from "@statecraft/vitest";
+import { scenario, withChain, withFundedWallet } from "@st8craft/vitest";
 
 test(
   "runs a funded wallet scenario in one test",

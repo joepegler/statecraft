@@ -1,5 +1,5 @@
 {
-  "name": "@statecraft/scenarios",
+  "name": "@st8craft/scenarios",
   "version": "0.1.0",
   "description": "Scenario engine and composable withX fixtures for deterministic EVM integration tests.",
   "keywords": [
@@ -29,8 +29,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@statecraft/clients": "workspace:*",
-    "@statecraft/runtime": "workspace:*",
+    "@st8craft/clients": "workspace:*",
+    "@st8craft/runtime": "workspace:*",
     "viem": "^2.38.2"
   },
   "peerDependencies": {

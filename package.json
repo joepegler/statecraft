@@ -25,7 +25,7 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "bun run --filter @statecraft/runtime build && bun run --filter @statecraft/clients build",
+    "build": "bun run --filter @st8craft/runtime build && bun run --filter @st8craft/clients build",
     "docs:build": "vocs build",
     "docs:dev": "vocs dev",
     "docs:preview": "vocs preview",

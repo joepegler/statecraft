@@ -1,5 +1,5 @@
-import { startRuntime, stopRuntime } from "@statecraft/runtime";
-import { createClients } from "@statecraft/clients";
+import { startRuntime, stopRuntime } from "@st8craft/runtime";
+import { createClients } from "@st8craft/clients";
 import type { EmptyScenarioContext, ScenarioRuntimeClientsContext, ScenarioStep } from "../types";
 
 /** Options for starting a fresh chain (non-fork) anvil instance. */

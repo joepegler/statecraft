@@ -7,7 +7,7 @@ const startBundler = vi.fn();
 const createBundlerClient = vi.fn();
 
 vi.mock("../internal/startBundler", () => ({ startBundler }));
-vi.mock("@statecraft/clients", () => ({ createBundlerClient }));
+vi.mock("@st8craft/clients", () => ({ createBundlerClient }));
 
 describe("withBundler", () => {
   test("throws when runtime clients are missing", async () => {
