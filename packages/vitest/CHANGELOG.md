@@ -1,5 +1,13 @@
 # @st8craft/vitest
 
+## 0.1.3
+
+### Patch Changes
+
+- a563df0: Test deployment
+- Updated dependencies [a563df0]
+  - @st8craft/scenarios@0.1.3
+
 ## 0.1.2
 
 ### Patch Changes
