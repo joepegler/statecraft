@@ -28,11 +28,18 @@ import * as RadixTabs from "@radix-ui/react-tabs";
   <RadixTabs.Content value="human">
     Install Statecraft into your project as a dev dependency.
 
-    Commands below include Vitest because the docs and repo examples use it. If you use Jest, `node:test`, or another runner, install that instead and pass `scenario(...)` to your runner's `test` API.
+    Commands below assume Vitest, since the docs and repo examples use it. If you use Jest, `node:test`, or another runner, install that instead and pass `scenario(...)` to your runner's `test` API.
 
     Prerequisites:
 
     - `anvil` (Foundry) available on your `PATH` (local runtime and pinned forks are powered by Anvil)
+
+    If you run fork tests on GitHub Actions, you also need a workflow step that sets up Foundry (example in this repo):
+
+    ```yaml
+    - name: Setup Foundry
+      uses: foundry-rs/foundry-toolchain@v1
+    ```
 
     If you do not have Anvil yet, install Foundry:
 
