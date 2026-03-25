@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { Hex } from "viem";
+import type { ScenarioFundedWalletContext } from "../types";
 import { withFundedWallet } from "./withFundedWallet";
 
 const { createWalletClient, http, generatePrivateKey, privateKeyToAccount, dealErc20Balance } = vi.hoisted(() => ({
@@ -51,7 +52,7 @@ describe("withFundedWallet", () => {
     const account = { address: "0x00000000000000000000000000000000000000aa" };
     const walletClient = { kind: "wallet-client" };
     const setBalance = vi.fn(async () => undefined);
-    const next = vi.fn(async () => undefined);
+    const next = vi.fn(async (_ctx: ScenarioFundedWalletContext) => undefined);
 
     privateKeyToAccount.mockReturnValue(account);
     http.mockReturnValue({ kind: "http-transport" });

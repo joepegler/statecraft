@@ -1,6 +1,6 @@
 {
   "name": "@st8craft/clients",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Viem publicClient, walletClient, and testClient wiring over Statecraft runtimes.",
   "keywords": [
     "ethereum",

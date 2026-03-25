@@ -1,6 +1,6 @@
 {
   "name": "@st8craft/vitest",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Ergonomic Vitest entrypoints for Statecraft scenarios, forks, and fixtures.",
   "keywords": [
     "ethereum",
@@ -18,9 +18,13 @@
     "url": "https://github.com/joepegler/statecraft/issues"
   },
   "type": "module",
-  "main": "./src/index.ts",
+  "main": "./dist/index.js",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "src": "./src/index.ts",
+      "default": "./dist/index.js"
+    }
   },
   "scripts": {
     "build": "zile",
@@ -32,5 +36,8 @@
   },
   "peerDependencies": {
     "@pimlico/alto": "^0.0.20"
-  }
+  },
+  "sideEffects": false,
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts"
 }

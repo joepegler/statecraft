@@ -87,7 +87,7 @@ describe("withDeployments", () => {
       },
       second: {
         artifact: { abi: [], bytecode: { object: "0x60026000f3" } },
-        args: ({ deployments }) => [deployments.first.address],
+        args: ({ deployments }) => [deployments.first!.address],
         afterDeploy,
       },
     });
