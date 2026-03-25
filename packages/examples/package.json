@@ -10,9 +10,6 @@
     "test:published": "node ./scripts/test-published.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
-  "devDependencies": {
-    "dotenv": "^17.3.1"
-  },
   "dependencies": {
     "@st8craft/vitest": "npm:@st8craft/vitest@latest",
     "viem": "^2.38.2"

@@ -26,7 +26,7 @@ test(
   "fork + funded wallet + USDC balance",
   scenario(
     withFork({
-      rpcUrl: process.env.RPC_URL!,
+      rpcUrl: process.env.VITE_RPC_URL!,
       blockNumber: 22_000_000n,
     }),
     withFundedWallet({

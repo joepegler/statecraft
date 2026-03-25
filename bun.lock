@@ -30,9 +30,6 @@
         "@st8craft/vitest": "npm:@st8craft/vitest@latest",
         "viem": "^2.38.2",
       },
-      "devDependencies": {
-        "dotenv": "^17.3.1",
-      },
     },
     "packages/runtime": {
       "name": "@st8craft/runtime",
