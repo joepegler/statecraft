@@ -107,6 +107,10 @@ export default defineConfig({
   },
   twoslash: {
     compilerOptions: {
+      baseUrl: __dirname,
+      paths: {
+        "@st8craft/core": ["packages/core/src/index.ts"],
+      },
       strict: true,
     },
   },
