@@ -1,5 +1,15 @@
 # @st8craft/core
 
+## 0.3.0
+
+### Minor Changes
+
+- Updated landing pages
+
+### Patch Changes
+
+- 8a77618: Added bundler test
+
 ## 0.2.0
 
 ### Major Changes
