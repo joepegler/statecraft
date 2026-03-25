@@ -1,5 +1,11 @@
 # @st8craft/core
 
+## 0.2.1
+
+### Patch Changes
+
+- 8a77618: Added bundler test
+
 ## 0.2.0
 
 ### Major Changes
