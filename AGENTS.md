@@ -137,8 +137,8 @@ From repo root:
 
 For tighter loops:
 
-- `bun --filter @statecraft/<pkg> test`
-- `bun --filter @statecraft/<pkg> run typecheck`
+- `bun --filter @st8craft/<pkg> test`
+- `bun --filter @st8craft/<pkg> run typecheck`
 
 ## Agent Tooling (Prompting pattern)
 

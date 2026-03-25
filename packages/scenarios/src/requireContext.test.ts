@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
-import { requireContext } from "./utils";
-import type { ScenarioContext } from "./types";
+import { requireContext } from "./utils.js";
+import type { ScenarioContext } from "./types.js";
 
 describe("requireContext", () => {
   test("returns the same object when keys are present", () => {

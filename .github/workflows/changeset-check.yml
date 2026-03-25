@@ -1,0 +1,50 @@
+name: Changeset Required
+
+on:
+  pull_request:
+    branches: ["main", "dev"]
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+permissions:
+  contents: read
+
+jobs:
+  changeset-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate changeset presence for SDK package changes
+        run: |
+          BASE_REF="origin/${{ github.base_ref }}"
+          git fetch origin "${{ github.base_ref }}"
+
+          CHANGED_FILES="$(git diff --name-only "$BASE_REF"...HEAD)"
+          echo "Changed files:"
+          echo "$CHANGED_FILES"
+
+          if ! echo "$CHANGED_FILES" | grep -Eq '^packages/(runtime|clients|scenarios|vitest)/'; then
+            echo "No publishable SDK packages changed, skipping changeset requirement."
+            exit 0
+          fi
+
+          if echo "$CHANGED_FILES" | grep -Eq '^\.changeset/.+\.md$'; then
+            echo "Changeset detected."
+            exit 0
+          fi
+
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          if echo "$PR_TITLE" | grep -Fqi "[skip changeset]"; then
+            echo "Bypass accepted via PR title [skip changeset]."
+            exit 0
+          fi
+
+          echo "A changeset file is required when editing publishable SDK packages."
+          echo "Add one with: bun changeset"
+          echo "Or include [skip changeset] in the PR title for non-release changes."
+          exit 1

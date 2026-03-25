@@ -1,6 +1,6 @@
 {
-  "name": "@statecraft/clients",
-  "version": "0.1.0",
+  "name": "@st8craft/clients",
+  "version": "0.1.2",
   "description": "Viem publicClient, walletClient, and testClient wiring over Statecraft runtimes.",
   "keywords": [
     "ethereum",
@@ -17,10 +17,18 @@
   "bugs": {
     "url": "https://github.com/joepegler/statecraft/issues"
   },
+  "files": [
+    "dist",
+    "CHANGELOG.md"
+  ],
   "type": "module",
-  "main": "./src/index.ts",
+  "main": "./dist/index.js",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "src": "./src/index.ts",
+      "default": "./dist/index.js"
+    }
   },
   "scripts": {
     "build": "zile",
@@ -28,7 +36,10 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@statecraft/runtime": "workspace:*",
+    "@st8craft/runtime": "^0.1.2",
     "viem": "^2.38.2"
-  }
+  },
+  "sideEffects": false,
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts"
 }

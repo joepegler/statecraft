@@ -1,10 +1,10 @@
 import { privateKeyToAccount, type PrivateKeyAccount } from "viem/accounts";
 import type { Address } from "viem";
-import { requireRuntimeClients } from "../utils";
-import type { BundlerClient } from "@statecraft/clients";
-import { createBundlerClient } from "@statecraft/clients";
-import type { ScenarioBundlerContext, ScenarioRuntimeClientsContext, ScenarioStep } from "../types";
-import { startBundler } from "../internal/startBundler";
+import { requireRuntimeClients } from "../utils.js";
+import type { BundlerClient } from "@st8craft/clients";
+import { createBundlerClient } from "@st8craft/clients";
+import type { ScenarioBundlerContext, ScenarioRuntimeClientsContext, ScenarioStep } from "../types.js";
+import { startBundler } from "../internal/startBundler.js";
 
 export type WithBundlerConfig = {
   /** ERC-4337 entry point address (typically EntryPoint v0.7 / v0.6). */

@@ -1,5 +1,5 @@
-import type { RuntimeHandle } from "@statecraft/runtime";
-import type { BundlerClient } from "@statecraft/clients";
+import type { RuntimeHandle } from "@st8craft/runtime";
+import type { BundlerClient } from "@st8craft/clients";
 import type {
   PublicClient,
   WalletClient,

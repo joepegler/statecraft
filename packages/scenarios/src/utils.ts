@@ -1,4 +1,4 @@
-import type { ContractArtifact, ScenarioContext } from "./types";
+import type { ContractArtifact, ScenarioContext } from "./types.js";
 import type { Hex } from "viem";
 
 /**

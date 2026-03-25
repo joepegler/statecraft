@@ -13,7 +13,12 @@ With Statecraft, setup is explicit middleware:
 ```ts
 import { test, expect } from "vitest";
 import { erc20Abi, parseEther } from "viem";
-import { scenario, withFork, withFundedWallet, withErc20Balance } from "@statecraft/vitest";
+import {
+  scenario,
+  withFork,
+  withFundedWallet,
+  withErc20Balance,
+} from "@st8craft/vitest";
 
 const USDC_MAINNET = "0xA0b86991c6218b36c1d19D4a2e9Eb0ce3606eB48" as const;
 
@@ -21,7 +26,7 @@ test(
   "fork + funded wallet + USDC balance",
   scenario(
     withFork({
-      rpcUrl: process.env.MAINNET_RPC_URL!,
+      rpcUrl: process.env.RPC_URL!,
       blockNumber: 22_000_000n,
     }),
     withFundedWallet({
@@ -66,14 +71,14 @@ Ensure `anvil` is available on your `PATH`.
 ### Install
 
 ```bash
-bun add -D @statecraft/vitest
+bun add -D @st8craft/vitest
 ```
 
 ### Create a local chain scenario
 
 ```ts
 import { test, expect } from "vitest";
-import { scenario, withChain, withFundedWallet } from "@statecraft/vitest";
+import { scenario, withChain, withFundedWallet } from "@st8craft/vitest";
 
 test(
   "runs a funded wallet scenario in one test",

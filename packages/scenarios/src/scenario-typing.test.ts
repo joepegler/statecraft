@@ -1,14 +1,14 @@
 import { expectTypeOf, test } from "vitest";
 import { parseEther } from "viem";
-import { scenario } from "./scenario";
-import { withChain } from "./fixtures/withChain";
-import { withFork } from "./fixtures/withFork";
-import { withExternalRuntime } from "./fixtures/withExternalRuntime";
-import { withFundedWallet } from "./fixtures/withFundedWallet";
-import { withErc20Balance } from "./fixtures/withErc20Balance";
-import { withBundler } from "./fixtures/withBundler";
-import type { ScenarioFundedWalletContext, ScenarioRuntimeClientsContext, ScenarioStep, ScenarioTest } from "./types";
-import type { ScenarioBundlerContext } from "./types";
+import { scenario } from "./scenario.js";
+import { withChain } from "./fixtures/withChain.js";
+import { withFork } from "./fixtures/withFork.js";
+import { withExternalRuntime } from "./fixtures/withExternalRuntime.js";
+import { withFundedWallet } from "./fixtures/withFundedWallet.js";
+import { withErc20Balance } from "./fixtures/withErc20Balance.js";
+import { withBundler } from "./fixtures/withBundler.js";
+import type { ScenarioFundedWalletContext, ScenarioRuntimeClientsContext, ScenarioStep, ScenarioTest } from "./types.js";
+import type { ScenarioBundlerContext } from "./types.js";
 
 const USDC_MAINNET = "0xA0b86991c6218b36c1d19D4a2e9Eb0ce3606eB48" as const;
 

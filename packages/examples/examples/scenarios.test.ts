@@ -10,13 +10,13 @@ import {
   withFork,
   withFundedWallet,
   withSnapshot,
-} from "@statecraft/vitest";
-import type { ContractArtifact } from "@statecraft/vitest";
+} from "@st8craft/vitest";
+import type { ContractArtifact } from "@st8craft/vitest";
 import {
   startRuntime,
   stopRuntime,
   type RuntimeHandle,
-} from "@statecraft/runtime";
+} from "@st8craft/runtime";
 import answerArtifact from "../artifacts/Answer.json";
 import { erc20Abi } from "viem";
 
@@ -84,7 +84,7 @@ test(
   "forked chain + funded wallet + real contract call",
   scenario(
     withFork({
-      rpcUrl: process.env.MAINNET_RPC_URL!,
+      rpcUrl: process.env.RPC_URL!,
       blockNumber: 22_000_000n,
     }),
     withFundedWallet({
@@ -107,7 +107,7 @@ test(
   "forked chain + funded wallet + USDC via withFundedWallet.erc20",
   scenario(
     withFork({
-      rpcUrl: process.env.MAINNET_RPC_URL!,
+      rpcUrl: process.env.RPC_URL!,
       blockNumber: 22_000_000n,
     }),
     withFundedWallet({
@@ -135,7 +135,7 @@ test(
   "forked chain + funded wallet + withErc20Balance step",
   scenario(
     withFork({
-      rpcUrl: process.env.MAINNET_RPC_URL!,
+      rpcUrl: process.env.RPC_URL!,
       blockNumber: 22_000_000n,
     }),
     withFundedWallet({

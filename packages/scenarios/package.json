@@ -1,6 +1,6 @@
 {
-  "name": "@statecraft/scenarios",
-  "version": "0.1.0",
+  "name": "@st8craft/scenarios",
+  "version": "0.1.2",
   "description": "Scenario engine and composable withX fixtures for deterministic EVM integration tests.",
   "keywords": [
     "ethereum",
@@ -18,10 +18,18 @@
   "bugs": {
     "url": "https://github.com/joepegler/statecraft/issues"
   },
+  "files": [
+    "dist",
+    "CHANGELOG.md"
+  ],
   "type": "module",
-  "main": "./src/index.ts",
+  "main": "./dist/index.js",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "src": "./src/index.ts",
+      "default": "./dist/index.js"
+    }
   },
   "scripts": {
     "build": "zile",
@@ -29,11 +37,14 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@statecraft/clients": "workspace:*",
-    "@statecraft/runtime": "workspace:*",
+    "@st8craft/clients": "^0.1.2",
+    "@st8craft/runtime": "^0.1.2",
     "viem": "^2.38.2"
   },
   "peerDependencies": {
     "@pimlico/alto": "^0.0.20"
-  }
+  },
+  "sideEffects": false,
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts"
 }

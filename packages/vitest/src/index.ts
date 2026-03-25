@@ -10,7 +10,7 @@ export {
   withBundler,
   withContracts,
   withDeployments,
-} from "@statecraft/scenarios";
+} from "@st8craft/scenarios";
 
 export type {
   AfterDeployContext,
@@ -38,4 +38,4 @@ export type {
   WithDeploymentsConfig,
   DeploymentSpec,
   WithBundlerConfig,
-} from "@statecraft/scenarios";
+} from "@st8craft/scenarios";

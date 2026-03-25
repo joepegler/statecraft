@@ -1,6 +1,6 @@
-import { startRuntime, stopRuntime } from "@statecraft/runtime";
-import { createClients } from "@statecraft/clients";
-import type { EmptyScenarioContext, ScenarioRuntimeClientsContext, ScenarioStep } from "../types";
+import { startRuntime, stopRuntime } from "@st8craft/runtime";
+import { createClients } from "@st8craft/clients";
+import type { EmptyScenarioContext, ScenarioRuntimeClientsContext, ScenarioStep } from "../types.js";
 
 /** Options for an anvil instance forked from a remote JSON-RPC endpoint at a pinned block. */
 export type WithForkConfig = {

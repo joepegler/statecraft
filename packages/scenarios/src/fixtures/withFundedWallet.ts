@@ -4,9 +4,9 @@ import type {
   ScenarioFundedWalletContext,
   ScenarioRuntimeClientsContext,
   ScenarioStep,
-} from "../types";
-import { dealErc20Balance } from "../internal/dealErc20Balance";
-import { requireRuntimeClients } from "../utils";
+} from "../types.js";
+import { dealErc20Balance } from "../internal/dealErc20Balance.js";
+import { requireRuntimeClients } from "../utils.js";
 
 /** One ERC-20 balance to seed for the funded wallet (after ETH funding). */
 export type WithFundedWalletErc20Balance = {

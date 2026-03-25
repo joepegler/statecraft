@@ -11,13 +11,13 @@ Use `withFork()` to test against pinned, deterministic mainnet (or L2) state whi
 ### Example
 ```ts twoslash [index.ts]
 import { test, expect } from "vitest";
-import { scenario, withFork, withFundedWallet } from "@statecraft/vitest";
+import { scenario, withFork, withFundedWallet } from "@st8craft/vitest";
 
 test(
   "funded wallet on pinned mainnet fork",
   scenario(
     withFork({
-      rpcUrl: process.env.MAINNET_RPC_URL!,
+      rpcUrl: process.env.RPC_URL!,
       blockNumber: 22_000_000n,
     }),
     withFundedWallet({ balance: 1n }),
