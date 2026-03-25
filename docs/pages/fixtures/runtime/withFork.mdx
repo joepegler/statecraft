@@ -17,7 +17,7 @@ test(
   "funded wallet on pinned mainnet fork",
   scenario(
     withFork({
-      rpcUrl: process.env.MAINNET_RPC_URL!,
+      rpcUrl: process.env.RPC_URL!,
       blockNumber: 22_000_000n,
     }),
     withFundedWallet({ balance: 1n }),
