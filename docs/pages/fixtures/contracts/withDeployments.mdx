@@ -1,0 +1,70 @@
+---
+title: withDeployments
+description: Deploy contracts using constructor semantics, and merge deployment results into ctx.deployments.
+---
+
+## `withDeployments({ ... })`
+
+### Why it is useful
+Use `withDeployments()` when constructor arguments and deployment-time behavior matter, and you want deployment results (addresses and optional typed contract handles) available by name.
+
+### Example
+```ts twoslash [index.ts]
+import { test, expect } from "vitest";
+import { scenario, withChain, withFundedWallet, withDeployments } from "@statecraft/vitest";
+
+const answerAbi = [
+  {
+    type: "function",
+    name: "answer",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ type: "uint256" }],
+  },
+];
+
+test(
+  "deployment record is present in ctx.deployments",
+  scenario(
+    withChain(),
+    withFundedWallet({ balance: 1n }),
+    withDeployments({
+      answer: {
+        artifact: {
+          abi: answerAbi,
+          bytecode: "0x600a600c600039600a6000f3",
+        },
+        args: [],
+      },
+    }),
+    async ({ deployments }) => {
+      const deployment = deployments?.answer;
+      if (!deployment) throw new Error("Expected `deployments.answer`.");
+      expect(typeof deployment.address).toBe("string");
+    },
+  ),
+);
+```
+
+### Options
+| Option | Type | Required? | Meaning (units/semantics) | Used for / affects |
+|---|---|---|---|---|
+| `name` (record key) | `string` | Yes | Deployment name you choose as the key in your config object. | Becomes `ctx.deployments[name]`. |
+| `artifact` | `ContractArtifact` | Yes | Contract artifact including required `abi` plus creation `bytecode`. | Drives `walletClient.deployContract`, and (when ABI is present) produces a typed contract handle. |
+| `args` | `readonly unknown[] | DeploymentArgsResolver` | No | Constructor arguments, or a resolver `(ctx) => args` that can depend on earlier deployments. | Controls constructor calldata for that deployment. |
+| `afterDeploy` | `(ctx) => Promise` | No | Optional async hook called after the receipt is mined and merged into `deployments`. | Allows extra node-only setup after deployment. |
+
+### Adds to context
+- `deployments` (map of deployment name → deployment record)
+
+### Context requirements
+- Requires runtime + clients from `withChain`, `withFork`, or `withExternalRuntime` (for `ctx.publicClient` and `ctx.testClient`).
+- Requires a funded wallet on `ctx.walletClient` (typically provided by `withFundedWallet`) so `walletClient.deployContract` can send the transaction.
+
+### Lifecycle
+Managed middleware that deploys contracts in key order, then forwards to `next`.
+
+### Notes and caveats
+- Deployment ordering is the key order in your config object.
+- `artifact.abi` is required at runtime (deployment fails if missing).
+

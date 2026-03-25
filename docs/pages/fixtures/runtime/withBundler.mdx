@@ -1,0 +1,50 @@
+---
+title: withBundler
+description: Start a local Alto bundler connected to the current Anvil runtime.
+---
+
+## `withBundler({ entryPoint, mode? })`
+
+### Why it is useful
+Use `withBundler()` to enable ERC-4337 flows against a local bundler that is wired to your scenario runtime.
+
+### Example
+```ts twoslash [index.ts]
+import { test, expect } from "vitest";
+import { scenario, withChain, withBundler } from "@statecraft/vitest";
+
+const ENTRY_POINT = "0x0576a174D229E3cFA37253523E645A78A0C91B57";
+
+test(
+  "bundler wiring is exposed in scenario context",
+  scenario(
+    withChain(),
+    withBundler({ entryPoint: ENTRY_POINT, mode: "alto" }),
+    async ({ entryPoint }) => {
+      expect(entryPoint).toBe(ENTRY_POINT);
+    },
+  ),
+);
+```
+
+### Options
+| Option | Type | Required? | Meaning (units/semantics) | Used for / affects |
+|---|---|---|---|---|
+| `entryPoint` | `Address` | Yes | ERC-4337 entry point address (typically EntryPoint v0.7 / v0.6). | Configures the bundler instance and how user operations are encoded. |
+| `mode` | `"alto"` | No | Bundler runtime mode. | Selects the local Alto bundler implementation. |
+
+### Adds to context
+- `bundlerUrl`
+- `bundlerClient`
+- `entryPoint`
+
+### Context requirements
+- Requires runtime + `ctx.testClient` from `withChain` / `withFork` / `withExternalRuntime`.
+- Expects the host project to have the peer dependency used by Alto (`@pimlico/alto`). Docs examples are type-checked, not executed here.
+
+### Lifecycle
+Managed lifecycle, the fixture starts a local bundler for the scenario and stops it in `finally`.
+
+### Notes and caveats
+Additional examples for user operations are planned.
+

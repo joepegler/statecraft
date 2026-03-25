@@ -26,17 +26,21 @@ export type DeploymentSpec = {
  */
 export type WithDeploymentsConfig = Record<string, DeploymentSpec>;
 
-type WithDeploymentsIn = ScenarioRuntimeClientsContext & { deployments?: Record<string, DeploymentRecord> };
-type WithDeploymentsOut = ScenarioRuntimeClientsContext & { deployments: Record<string, DeploymentRecord> };
+type DeploymentsMap = Record<string, DeploymentRecord>;
 
 /**
  * Middleware: deploys each spec in key order, then merges `DeploymentRecord`s into `ctx.deployments`.
  * Requires a prior `withChain` / `withFork` and a wallet account on `walletClient`.
  */
-export function withDeployments(config: WithDeploymentsConfig): ScenarioStep<WithDeploymentsIn, WithDeploymentsOut> {
+export function withDeployments<C extends ScenarioRuntimeClientsContext>(
+  config: WithDeploymentsConfig,
+): ScenarioStep<
+  C & { deployments?: DeploymentsMap },
+  C & { deployments: DeploymentsMap }
+> {
   return async (ctx, next) => {
     requireRuntimeClients(ctx);
-    const deployments: Record<string, DeploymentRecord> = { ...(ctx.deployments ?? {}) };
+    const deployments: DeploymentsMap = { ...(ctx.deployments ?? {}) };
 
     for (const [name, spec] of Object.entries(config)) {
       if (!spec.artifact.abi) {

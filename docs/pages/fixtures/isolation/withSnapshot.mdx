@@ -1,0 +1,107 @@
+---
+title: withSnapshot
+description: Snapshot the runtime before inner steps run, then revert in a finally block.
+---
+
+## withSnapshot()
+
+### Why it is useful
+Use `withSnapshot()` to isolate side effects inside a scenario, so changes made by inner steps are rolled back reliably.
+
+### Suite scoped runtimes and `describe`
+If you reuse one running Anvil runtime across multiple tests in a file or `describe` block (for example, by creating the runtime handle in `beforeAll` and attaching it via `withExternalRuntime()`), call `withSnapshot()` inside every `scenario(...)` that should not leak state between tests. This pattern assumes the tests are not running concurrently against the same `runtime` handle.
+
+### Example
+```ts twoslash [index.ts]
+import { test, expect } from "vitest";
+import { scenario, withChain, withSnapshot } from "@statecraft/vitest";
+
+test(
+  "snapshot isolates chain mutations",
+  scenario(
+    withChain(),
+    withSnapshot(),
+    async ({ publicClient }) => {
+      expect(await publicClient.getBlockNumber()).toBeGreaterThan(0n);
+    },
+  ),
+);
+```
+
+### Options
+| Option | Type | Required? | Meaning (units/semantics) | Used for / affects |
+|---|---|---|---|---|
+| `()` | `none` | No | This fixture does not accept any configuration options. | Always uses `ctx.testClient.snapshot()` and reverts in `finally`. |
+
+### Adds to context
+None; it forwards the context unchanged.
+
+### Context requirements
+- Requires runtime clients on context, so it must come after a runtime source fixture like `withChain`, `withFork`, or `withExternalRuntime`.
+
+### Example (Vitest `describe`)
+```ts
+import { describe, beforeAll, afterAll, test, expect } from "vitest";
+import { parseEther } from "viem";
+import { scenario, withExternalRuntime, withSnapshot, withFundedWallet } from "@statecraft/vitest";
+import { startRuntime, stopRuntime, type RuntimeHandle } from "@statecraft/runtime";
+
+let handle!: RuntimeHandle;
+
+// Expected to be empty on a fresh Anvil chain.
+const recipient = "0x000000000000000000000000000000000000dEaD" as const;
+const txValue = parseEther("0.01");
+
+describe("shared runtime with snapshot isolation", () => {
+  beforeAll(async () => {
+    handle = await startRuntime({ mode: "chain" });
+  });
+
+  afterAll(async () => {
+    await stopRuntime(handle);
+  });
+
+  test(
+    "test 1 mutates safely",
+    scenario(
+      withExternalRuntime({ runtime: handle }),
+      withSnapshot(),
+      withFundedWallet({ balance: parseEther("1") }),
+      async ({ publicClient, walletClient }) => {
+        const before = await publicClient.getBalance({ address: recipient });
+        expect(before).toBe(0n);
+
+        // Send ETH to `recipient` from the scenario wallet.
+        // Any chain mutation here is rolled back by `withSnapshot()`.
+        await walletClient.sendTransaction({
+          to: recipient,
+          value: txValue,
+        });
+
+        const after = await publicClient.getBalance({ address: recipient });
+        expect(after).toBe(txValue);
+      },
+    ),
+  );
+
+  test(
+    "test 2 sees rolled back state",
+    scenario(
+      withExternalRuntime({ runtime: handle }),
+      withSnapshot(),
+      async ({ publicClient }) => {
+        const balance = await publicClient.getBalance({ address: recipient });
+        expect(balance).toBe(0n);
+      },
+    ),
+  );
+});
+```
+
+### Lifecycle
+Managed lifecycle, it snapshots before `next` and reverts afterward via a `finally` block.
+
+### Notes and caveats
+- Nesting multiple `withSnapshot()` layers creates nested snapshot scopes.
+- When reusing one `runtime` handle via `withExternalRuntime()`, avoid concurrent tests that mutate chain state, since `withSnapshot()` relies on snapshot and revert ordering.
+

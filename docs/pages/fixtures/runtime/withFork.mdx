@@ -1,0 +1,56 @@
+---
+title: withFork
+description: Start a local Anvil fork from a remote JSON-RPC endpoint at a pinned block.
+---
+
+## `withFork({ rpcUrl, blockNumber[, chainId, key] })`
+
+### Why it is useful
+Use `withFork()` to test against pinned, deterministic mainnet (or L2) state while still running locally via Anvil.
+
+### Example
+```ts twoslash [index.ts]
+import { test, expect } from "vitest";
+import { scenario, withFork, withFundedWallet } from "@statecraft/vitest";
+
+test(
+  "funded wallet on pinned mainnet fork",
+  scenario(
+    withFork({
+      rpcUrl: process.env.MAINNET_RPC_URL!,
+      blockNumber: 22_000_000n,
+    }),
+    withFundedWallet({ balance: 1n }),
+    async ({ publicClient, wallet }) => {
+      expect(
+        await publicClient.getBalance({ address: wallet }),
+      ).toBe(1n);
+    },
+  ),
+);
+```
+
+### Options
+| Option | Type | Required? | Meaning (units/semantics) | Used for / affects |
+|---|---|---|---|---|
+| `rpcUrl` | `string` | Yes | HTTP(S) RPC URL to fork. | Source for remote chain state. |
+| `blockNumber` | `bigint` | Yes | Pinned fork block number. | Determinism: pins the fork so reads and state are stable. |
+| `chainId` | `number` | No | Anvil `--chain-id` override. | Client chain identity (advanced). |
+| `key` | `string` | No | Stable correlation id forwarded to the runtime layer. | Correlates runtime config across restarts (advanced). |
+
+### Adds to context
+- `runtime`
+- `publicClient`
+- `walletClient`
+- `testClient`
+
+### Context requirements
+None beyond being able to reach `rpcUrl` when you run tests.
+
+### Lifecycle
+Managed lifecycle, the fixture starts and stops Anvil for the scenario.
+
+### Notes and caveats
+- Prefer pinned `blockNumber` values for determinism.
+- This fixture is intended for compatible local/forked runtimes (Anvil-style). 
+

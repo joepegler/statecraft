@@ -3,6 +3,8 @@ name: Deploy Docs
 on:
   push:
     branches: ["main"]
+  pull_request:
+    branches: ["dev"]
   workflow_dispatch:
 
 env:
@@ -18,7 +20,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
+  sdk-tests:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -32,7 +35,25 @@ jobs:
       - name: Install Dependencies
         run: bun install --frozen-lockfile
 
-      - name: Set Docs Base Path and public URL
+      - name: Run SDK Tests
+        run: bun test
+
+  build:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.2.4"
+
+      - name: Install Dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Set Docs Base Path
         run: |
           # If docs/public/CNAME exists, GitHub Pages serves the site at the custom apex (BASE_PATH /).
           CNAME_FILE="docs/public/CNAME"
@@ -40,7 +61,6 @@ jobs:
             DOMAIN=$(tr -d '\r' < "$CNAME_FILE" | sed '/^$/d' | head -n1 | tr -d '[:space:]')
             if [ -n "$DOMAIN" ]; then
               echo "BASE_PATH=/" >> "$GITHUB_ENV"
-              echo "DOCS_BASE_URL=https://${DOMAIN}" >> "$GITHUB_ENV"
               exit 0
             fi
           fi
@@ -48,10 +68,8 @@ jobs:
           REPO="${{ github.event.repository.name }}"
           if [ "$REPO" = "$OWNER.github.io" ]; then
             echo "BASE_PATH=/" >> "$GITHUB_ENV"
-            echo "DOCS_BASE_URL=https://${OWNER}.github.io" >> "$GITHUB_ENV"
           else
             echo "BASE_PATH=/${REPO}/" >> "$GITHUB_ENV"
-            echo "DOCS_BASE_URL=https://${OWNER}.github.io/${REPO}" >> "$GITHUB_ENV"
           fi
 
       - name: Build Docs
@@ -63,6 +81,7 @@ jobs:
           path: docs/dist
 
   deploy:
+    if: github.event_name != 'pull_request'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

@@ -1,0 +1,20 @@
+---
+title: Runtime Source Fixtures
+description: Start or attach an Anvil runtime and wire viem clients with withChain, withFork, and withExternalRuntime.
+---
+
+# Runtime Source Fixtures
+
+Statecraft scenarios require a runtime and viem clients. These fixtures provide the base runtime context and are generally mutually exclusive in normal scenarios.
+
+Use exactly one of `withChain`, `withFork`, or `withExternalRuntime` as your base runtime step. Everything else (wallet funding, ERC-20 seeding, contracts, and isolation) assumes this base step exists.
+
+## Fixtures
+
+- [`withChain()`](/fixtures/runtime/withChain)
+- [`withFork({ rpcUrl, blockNumber })`](/fixtures/runtime/withFork)
+- [`withExternalRuntime({ runtime, clients? })`](/fixtures/runtime/withExternalRuntime)
+
+## Additional wiring
+- [`withBundler({ entryPoint, mode? })`](/fixtures/runtime/withBundler)
+

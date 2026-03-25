@@ -21,11 +21,9 @@ const basePath =
       : `/${envBasePath}`
     : "/";
 
-const docsBaseUrlRaw = process.env.DOCS_BASE_URL?.trim();
-const baseUrl =
-  docsBaseUrlRaw && docsBaseUrlRaw.length > 0
-    ? `${docsBaseUrlRaw.replace(/\/+$/, "")}/`
-    : undefined;
+const DOCS_ORIGIN = "https://statecraft.services";
+const docsBaseUrl = `${DOCS_ORIGIN}${basePath}`.replace(/\/+$/, "");
+const baseUrl = `${docsBaseUrl}/`;
 
 function canonicalHref(docsBase: string, location: string): string {
   const base = docsBase.replace(/\/+$/, "");
@@ -48,15 +46,35 @@ const pageSocial: Record<
     twitterDescription:
       "Install Statecraft, run tests with Bun, and compose a forked-mainnet Vitest scenario with withFork and withFundedWallet.",
   },
-  "/core-concepts": {
-    twitterTitle: "Core concepts – Statecraft",
+  "/overview": {
+    twitterTitle: "Overview – Statecraft",
     twitterDescription:
       "How scenario composition, typed context, and fixtures like withChain, withFork, withFundedWallet, and withSnapshot fit together in Statecraft.",
   },
-  "/migration": {
-    twitterTitle: "Migration – Statecraft",
+  "/fixtures/runtime": {
+    twitterTitle: "Runtime source fixtures – Statecraft",
     twitterDescription:
-      "Typed scenario context, withErc20Balance ordering, requireContext, and withFundedWallet.erc20 when upgrading Statecraft.",
+      "Choose withChain, withFork, or withExternalRuntime to provide the runtime and viem clients a scenario needs.",
+  },
+  "/fixtures/wallets": {
+    twitterTitle: "Wallets & balance fixtures – Statecraft",
+    twitterDescription:
+      "Fund the scenario account with withFundedWallet, optionally seed ERC-20 balances for that wallet.",
+  },
+  "/fixtures/tokens": {
+    twitterTitle: "Tokens & ERC-20 fixtures – Statecraft",
+    twitterDescription:
+      "Seed ERC-20 balances in test state with withErc20Balance, including recipient selection via `to`.",
+  },
+  "/fixtures/contracts": {
+    twitterTitle: "Contracts & deployment fixtures – Statecraft",
+    twitterDescription:
+      "Inject runtime bytecode with withContracts or deploy contracts with constructor semantics via withDeployments.",
+  },
+  "/fixtures/isolation": {
+    twitterTitle: "Isolation fixtures – Statecraft",
+    twitterDescription:
+      "Keep tests independent when reusing runtimes with withSnapshot snapshot-and-revert isolation.",
   },
 };
 
@@ -64,7 +82,7 @@ export default defineConfig({
   title: "Statecraft",
   description: SITE_DESCRIPTION,
   titleTemplate: "%s – Statecraft",
-  logoUrl: "/icon.svg",
+  logoUrl: "/logo.png",
   // Vite SSR resolves react-router(-dom) to the Node "default" CJS build, which breaks
   // named ESM imports. Alias to the published .mjs entries (same as the "import" condition).
   vite: {
@@ -108,28 +126,79 @@ export default defineConfig({
       },
     },
   },
-  iconUrl: "/icon.svg",
+  iconUrl: "/logo.png",
   ogImageUrl:
     "https://vocs.dev/api/og?logo=%logo&title=%title&description=%description",
   sidebar: [
     {
-      text: "Getting Started",
+      text: "Introduction",
       items: [
-        { text: "Overview", link: "/" },
+        { text: "Overview", link: "/overview" },
         { text: "Quickstart", link: "/quickstart" },
-        { text: "Core Concepts", link: "/core-concepts" },
       ],
     },
     {
-      text: "Reference",
-      items: [{ text: "Migration", link: "/migration" }],
+      text: "Fixtures",
+      items: [
+        {
+          text: "Runtime Source",
+          link: "/fixtures/runtime",
+          items: [
+            { text: "withChain", link: "/fixtures/runtime/withChain" },
+            { text: "withFork", link: "/fixtures/runtime/withFork" },
+            {
+              text: "withExternalRuntime",
+              link: "/fixtures/runtime/withExternalRuntime",
+            },
+            { text: "withBundler", link: "/fixtures/runtime/withBundler" },
+          ],
+        },
+        {
+          text: "Wallets & Accounts",
+          link: "/fixtures/wallets",
+          items: [
+            {
+              text: "withFundedWallet",
+              link: "/fixtures/wallets/withFundedWallet",
+            },
+          ],
+        },
+        {
+          text: "Tokens & Assets",
+          link: "/fixtures/tokens",
+          items: [
+            {
+              text: "withErc20Balance",
+              link: "/fixtures/tokens/withErc20Balance",
+            },
+          ],
+        },
+        {
+          text: "Contracts",
+          link: "/fixtures/contracts",
+          items: [
+            {
+              text: "withContracts",
+              link: "/fixtures/contracts/withContracts",
+            },
+            {
+              text: "withDeployments",
+              link: "/fixtures/contracts/withDeployments",
+            },
+          ],
+        },
+        {
+          text: "Isolation",
+          link: "/fixtures/isolation",
+          items: [
+            { text: "withSnapshot", link: "/fixtures/isolation/withSnapshot" },
+          ],
+        },
+      ],
     },
   ],
   head({ path }) {
-    const docsBase = docsBaseUrlRaw?.replace(/\/+$/, "");
-    if (!docsBase) {
-      return React.createElement(React.Fragment, null);
-    }
+    const docsBase = docsBaseUrl.replace(/\/+$/, "");
 
     const locationKey = path.replace(/\/+$/, "") || "/";
     const href = canonicalHref(docsBase, locationKey);

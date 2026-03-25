@@ -1,0 +1,98 @@
+---
+title: Overview
+description: Learn Statecraft's scenario fixture model for deterministic Ethereum tests, and how ordered `withX` steps replace setup glue code.
+---
+
+# Overview
+
+Statecraft turns brittle Ethereum test setup into an explicit fixture pipeline. Instead of scattered `beforeEach` plumbing, you compose `withX` steps in order, and your test body stays focused on behavior.
+
+## What Statecraft Solves
+
+Ad hoc Ethereum tests tend to accumulate setup glue, hidden ordering dependencies, and unclear runtime ownership. As the fixture graph grows, it becomes harder to tell what state each test needs, or why a failure happened.
+
+Statecraft replaces that with composable `withX` fixtures. Every test declares its runtime, wallet, token balances, and contract setup in one place, and the scenario builds the final context you assert against.
+
+## The Core Abstraction
+
+`scenario(...steps, testFn)` composes fixtures in order and returns a Vitest-compatible async test function.
+
+Each fixture:
+
+1. reads the current context
+2. adds or replaces fields on it
+3. calls `next(updatedCtx)` once
+
+## A Concrete Scenario Example
+
+```ts twoslash
+import { test, expect } from "vitest";
+import { parseEther } from "viem";
+import { scenario, withChain, withFundedWallet } from "@statecraft/vitest";
+
+test(
+  "funded wallet on local chain",
+  scenario(
+    withChain(),
+    withFundedWallet({ balance: parseEther("1") }),
+    async ({ publicClient, wallet }) => {
+      const balance = await publicClient.getBalance({
+        address: wallet,
+      });
+      expect(balance).toBe(parseEther("1"));
+    },
+  ),
+);
+```
+
+This is the same pattern you will reuse for forks, deployments, token seeding, and isolation. To move from local to a pinned mainnet state, swap `withChain()` for `withFork({ rpcUrl, blockNumber })`.
+
+## Why this beats ad hoc setup
+
+Without Statecraft, you typically need to:
+
+- start and stop your runtime in the right hooks
+- remember ordering constraints between create runtime, fund wallet, seed balances, and deploy contracts
+- plumb the resulting addresses and clients into your test body
+
+With Statecraft, you declare those dependencies as `withX` steps. The scenario executes them in the order you wrote, and your `testFn` receives the resulting context.
+
+## How composition works
+
+Fixture steps form an explicit pipeline. When one fixture depends on another, put them in order, and your scenario callback will only have what those steps produce.
+
+As a rule of thumb, you should be able to read a test and answer "what state does this test need?" by scanning the `scenario(...)` arguments.
+
+## Type safety in practice
+
+Because TypeScript understands the fixture order, it can infer which fields are available in your `async ({ ... })` callback. In the example above, `publicClient` and `wallet` exist because you included `withChain()` and `withFundedWallet()`.
+
+If you write custom fixtures, use `requireContext` to fail fast when a step expects keys that are not present.
+
+## Lifecycle terminology (when it matters)
+
+- Managed lifecycle: the fixture starts and stops Anvil (`withChain`, `withFork`).
+- External lifecycle: you own `startRuntime` and `stopRuntime` via `beforeAll` and `afterAll`, and scenarios attach via `withExternalRuntime`.
+- Suite-scoped handle: one external `RuntimeHandle` reused across tests in one file or `describe`.
+- Snapshot isolation: call `withSnapshot()` inside each scenario when a suite-scoped handle is reused across mutating tests.
+
+## Choosing your test isolation model
+
+When you reuse a suite-scoped runtime with `withExternalRuntime`, you can pick one of two intentional models:
+
+- Per-test rollback: use `withSnapshot()` in each scenario, so every test starts from the same baseline.
+- Shared evolving state: skip `withSnapshot()` so sequential tests in one file can build on previous mutations.
+
+In practice, teams often run one runtime per file with `beforeAll` and `afterAll`, then choose either model per scenario. This gives you explicit control over state sharing inside a file while still allowing Vitest to execute different files in parallel on separate runtime instances.
+
+## Where to go next
+
+For parameter-level documentation and examples, see the fixture reference pages:
+
+- [Runtime source fixtures](/fixtures/runtime)
+- [Wallets & balance fixtures](/fixtures/wallets)
+- [Tokens & ERC-20 balance fixtures](/fixtures/tokens)
+- [Contracts & deployment fixtures](/fixtures/contracts)
+- [Isolation fixtures](/fixtures/isolation)
+
+If you are new, start with [Quickstart](/quickstart).

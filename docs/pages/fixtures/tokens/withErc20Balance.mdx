@@ -1,0 +1,61 @@
+---
+title: withErc20Balance
+description: Seed an ERC-20 balance for a recipient in local/forked test state.
+---
+
+## `withErc20Balance({ token, amount[, to] })`
+
+### Why it is useful
+Use `withErc20Balance()` to seed ERC-20 balances directly in test state, so you can exercise token transfers and contract logic without writing per-test minting or impersonation boilerplate.
+
+### Example
+```ts twoslash [index.ts]
+import { test, expect } from "vitest";
+import { erc20Abi } from "viem";
+import { scenario, withChain, withFundedWallet, withErc20Balance } from "@statecraft/vitest";
+
+const USDC = "0xA0b86991c6218b36c1d19D4a2e9Eb0ce3606eB48";
+
+test(
+  "funded wallet has USDC seeded",
+  scenario(
+    withChain(),
+    withFundedWallet({ balance: 1n }),
+    withErc20Balance({
+      token: USDC,
+      amount: 1_000_000n,
+    }),
+    async ({ publicClient, wallet }) => {
+      expect(
+        await publicClient.readContract({
+          address: USDC,
+          abi: erc20Abi,
+          functionName: "balanceOf",
+          args: [wallet],
+        }),
+      ).toBe(1_000_000n);
+    },
+  ),
+);
+```
+
+### Options
+| Option | Type | Required? | Meaning (units/semantics) | Used for / affects |
+|---|---|---|---|---|
+| `token` | `Address` | Yes | ERC-20 token contract address. | Determines which token storage is rewritten. |
+| `amount` | `bigint` | Yes | Token raw units balance (for example, from `parseUnits`). | Sets the recipient's balance in token raw units. |
+| `to` | `Address` | No | Recipient address to set. When omitted, uses `ctx.wallet`. | Chooses the account whose balance state is rewritten. |
+
+### Adds to context
+None; this fixture mainly mutates node state before forwarding to the callback.
+
+### Context requirements
+- Requires runtime + clients from `withChain`, `withFork`, or `withExternalRuntime` so `ctx.testClient` exists.
+- If `to` is omitted, `ctx.wallet` must already be set (typically by `withFundedWallet`).
+
+### Lifecycle
+Managed middleware that writes test-only token state on entry, then forwards to `next`.
+
+### Notes and caveats
+This is test-only state manipulation: it rewrites token balance state on the node and is not a production mint path. It may fail for non-standard token implementations (for example rebasing tokens or unusual storage layouts).
+

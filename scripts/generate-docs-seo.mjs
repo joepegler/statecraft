@@ -1,12 +1,9 @@
 /**
  * Writes crawl assets into docs/public before `vocs build`.
- * Set DOCS_BASE_URL to the public docs origin + path (no trailing slash), e.g.
- * https://octocat.github.io/statecraft
+ * Hardcodes the docs origin, and uses `BASE_PATH` to handle hosting under subpaths.
  *
- * When using a GitHub Pages custom domain, `docs/public/CNAME` drives CI: the workflow
- * sets DOCS_BASE_URL to `https://<domain>` and BASE_PATH to `/`.
- * In CI this is set in `.github/workflows/docs-pages.yml`. When unset, robots.txt
- * is still emitted; sitemap.xml is omitted.
+ * The origin is fixed to `https://statecraft.services` and `BASE_PATH` is provided by
+ * `.github/workflows/docs-pages.yml` (or locally).
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -14,9 +11,27 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const publicDir = path.resolve(__dirname, "../docs/public");
-const baseRaw = process.env.DOCS_BASE_URL?.trim();
-const base = baseRaw ? baseRaw.replace(/\/+$/, "") : "";
-const routes = ["/", "/quickstart", "/core-concepts"];
+const DOCS_ORIGIN = "https://statecraft.services";
+const envBasePath = process.env.BASE_PATH?.trim();
+const basePath =
+  envBasePath && envBasePath !== "/"
+    ? envBasePath.startsWith("/")
+      ? envBasePath
+      : `/${envBasePath}`
+    : "/";
+
+const base = `${DOCS_ORIGIN}${basePath}`.replace(/\/+$/, "");
+const routes = [
+  "/",
+  "/quickstart",
+  "/skill",
+  "/overview",
+  "/fixtures/runtime",
+  "/fixtures/wallets",
+  "/fixtures/tokens",
+  "/fixtures/contracts",
+  "/fixtures/isolation",
+];
 
 fs.mkdirSync(publicDir, { recursive: true });
 

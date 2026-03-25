@@ -8,11 +8,14 @@ export { withFundedWallet } from "./fixtures/withFundedWallet";
 export { withErc20Balance } from "./fixtures/withErc20Balance";
 export { withContracts } from "./fixtures/withContracts";
 export { withDeployments } from "./fixtures/withDeployments";
+export { withBundler } from "./fixtures/withBundler";
 
 export type {
   AfterDeployContext,
   AfterSetCodeContext,
   ContractArtifact,
+  BundlerContext,
+  ScenarioBundlerContext,
   DeploymentArgsResolver,
   DeploymentRecord,
   EmptyScenarioContext,
@@ -31,3 +34,4 @@ export type { WithFundedWalletConfig, WithFundedWalletErc20Balance } from "./fix
 export type { WithErc20BalanceConfig } from "./fixtures/withErc20Balance";
 export type { WithContractsConfig } from "./fixtures/withContracts";
 export type { WithDeploymentsConfig, DeploymentSpec } from "./fixtures/withDeployments";
+export type { WithBundlerConfig } from "./fixtures/withBundler";

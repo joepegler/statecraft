@@ -1,12 +1,14 @@
 import { expectTypeOf, test } from "vitest";
 import { parseEther } from "viem";
-import { scenario } from "../src/scenario";
-import { withChain } from "../src/fixtures/withChain";
-import { withFork } from "../src/fixtures/withFork";
-import { withExternalRuntime } from "../src/fixtures/withExternalRuntime";
-import { withFundedWallet } from "../src/fixtures/withFundedWallet";
-import { withErc20Balance } from "../src/fixtures/withErc20Balance";
-import type { ScenarioFundedWalletContext, ScenarioRuntimeClientsContext, ScenarioStep, ScenarioTest } from "../src/types";
+import { scenario } from "./scenario";
+import { withChain } from "./fixtures/withChain";
+import { withFork } from "./fixtures/withFork";
+import { withExternalRuntime } from "./fixtures/withExternalRuntime";
+import { withFundedWallet } from "./fixtures/withFundedWallet";
+import { withErc20Balance } from "./fixtures/withErc20Balance";
+import { withBundler } from "./fixtures/withBundler";
+import type { ScenarioFundedWalletContext, ScenarioRuntimeClientsContext, ScenarioStep, ScenarioTest } from "./types";
+import type { ScenarioBundlerContext } from "./types";
 
 const USDC_MAINNET = "0xA0b86991c6218b36c1d19D4a2e9Eb0ce3606eB48" as const;
 
@@ -61,6 +63,25 @@ test("scenario(chain, erc20 with `to`, test) accepts ScenarioTest<ScenarioRuntim
         token: USDC_MAINNET,
         amount: 1n,
         to: "0x0000000000000000000000000000000000000002",
+      }),
+      t,
+    ),
+  ).toEqualTypeOf<() => Promise<void>>();
+});
+
+const ENTRYPOINT_V07 = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789" as const;
+
+test("withBundler output type is scenario bundler context", () => {
+  expectTypeOf<StepOut<ReturnType<typeof withBundler>>>().toEqualTypeOf<ScenarioBundlerContext>();
+});
+
+test("scenario(chain, bundler, test) accepts ScenarioTest<ScenarioBundlerContext>", () => {
+  const t: ScenarioTest<ScenarioBundlerContext> = async (_ctx) => {};
+  expectTypeOf(
+    scenario(
+      withChain(),
+      withBundler({
+        entryPoint: ENTRYPOINT_V07,
       }),
       t,
     ),

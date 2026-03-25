@@ -1,6 +1,10 @@
 import { createWalletClient, http, type Address, type Hex } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
-import type { ScenarioFundedWalletContext, ScenarioRuntimeClientsContext, ScenarioStep } from "../types";
+import type {
+  ScenarioFundedWalletContext,
+  ScenarioRuntimeClientsContext,
+  ScenarioStep,
+} from "../types";
 import { dealErc20Balance } from "../internal/dealErc20Balance";
 import { requireRuntimeClients } from "../utils";
 
@@ -29,7 +33,9 @@ export type WithFundedWalletConfig = {
  * Middleware: ensures a funded account, sets `ctx.wallet`, and replaces `walletClient` with that account.
  * Requires a prior `withChain` / `withFork` so `testClient` and chain RPC are available.
  */
-export function withFundedWallet(config: WithFundedWalletConfig): ScenarioStep<ScenarioRuntimeClientsContext, ScenarioFundedWalletContext> {
+export function withFundedWallet(
+  config: WithFundedWalletConfig,
+): ScenarioStep<ScenarioRuntimeClientsContext, ScenarioFundedWalletContext> {
   return async (ctx, next) => {
     requireRuntimeClients(ctx);
 

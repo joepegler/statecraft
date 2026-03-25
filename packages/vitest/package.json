@@ -29,5 +29,8 @@
   },
   "dependencies": {
     "@statecraft/scenarios": "workspace:*"
+  },
+  "peerDependencies": {
+    "@pimlico/alto": "^0.0.20"
   }
 }

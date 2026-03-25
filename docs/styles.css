@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+/* Quickstart page-specific Radix Tabs styling. */
+.quickstartTabs [role="tablist"]{
+  display:flex;
+  gap:0;
+  border-bottom:1px solid var(--vocs-color_border);
+}
+.quickstartTabs [role="tab"]{
+  appearance:none;
+  background:transparent;
+  border:1px solid var(--vocs-color_border);
+  border-bottom:0;
+  padding:8px 12px;
+  margin-right:8px;
+  margin-bottom:-1px;
+  border-top-left-radius:8px;
+  border-top-right-radius:8px;
+  color:var(--vocs-color_text2);
+  font-weight:var(--vocs-fontWeight_medium);
+  cursor:pointer;
+  font-size:14px;
+}
+.quickstartTabs [role="tab"][data-state="active"]{
+  background:var(--vocs-color_background3);
+  color:var(--vocs-color_title);
+}
+.quickstartTabs [role="tabpanel"]{
+  padding:16px 0 0 0;
+}
+.quickstartPkgTabs [role="tablist"]{
+  display:flex;
+  gap:0;
+  border-bottom:1px solid var(--vocs-color_border);
+}
+.quickstartPkgTabs [role="tab"]{
+  appearance:none;
+  background:transparent;
+  border:1px solid var(--vocs-color_border);
+  border-bottom:0;
+  padding:8px 12px;
+  margin-right:8px;
+  margin-bottom:-1px;
+  border-top-left-radius:8px;
+  border-top-right-radius:8px;
+  color:var(--vocs-color_text2);
+  font-weight:var(--vocs-fontWeight_medium);
+  cursor:pointer;
+  font-size:14px;
+}
+.quickstartPkgTabs [role="tab"][data-state="active"]{
+  background:var(--vocs-color_background3);
+  color:var(--vocs-color_title);
+}
+.quickstartPkgTabs [role="tabpanel"]{
+  padding:16px 0 0 0;
+}

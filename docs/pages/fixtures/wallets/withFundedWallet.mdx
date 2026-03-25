@@ -1,0 +1,51 @@
+---
+title: withFundedWallet
+description: Create a funded scenario account, optionally seeding ERC-20 balances for that account.
+---
+
+## `withFundedWallet({ balance[, privateKey, erc20] })`
+
+### Why it is useful
+Use `withFundedWallet()` to get a ready-to-sign scenario account and deterministic ETH (and optional ERC-20) balances, so your test body focuses on behavior instead of setup glue code.
+
+### Example
+```ts twoslash [index.ts]
+import { test, expect } from "vitest";
+import { parseEther } from "viem";
+import { scenario, withChain, withFundedWallet } from "@statecraft/vitest";
+
+test(
+  "wallet is funded",
+  scenario(
+    withChain(),
+    withFundedWallet({ balance: parseEther("1") }),
+    async ({ publicClient, wallet }) => {
+      expect(await publicClient.getBalance({ address: wallet })).toBe(
+        parseEther("1"),
+      );
+    },
+  ),
+);
+```
+
+### Options
+| Option | Type | Required? | Meaning (units/semantics) | Used for / affects |
+|---|---|---|---|---|
+| `balance` | `bigint` | Yes | ETH balance to set in wei. | Sets the funded address ETH balance via anvil test-client state mutation. |
+| `privateKey` | `Hex` | No | Stable signer key to use instead of generating a new one. | Determines `walletClient.account` and `ctx.wallet`. |
+| `erc20` | `readonly WithFundedWalletErc20Balance[]` | No | Optional ERC-20 seeds for the funded address. Each entry is `{ token: Address; amount: bigint }` where `amount` is raw token units. | Writes token balance state for the funded address after ETH funding. |
+
+### Adds to context
+- `wallet`
+- `walletClient`
+
+### Context requirements
+Requires runtime + clients from `withChain`, `withFork`, or `withExternalRuntime` so `ctx.testClient` exists.
+
+### Lifecycle
+Managed with respect to the wallet setup, this fixture does not start or stop Anvil.
+
+### Notes and caveats
+- This is test-only state manipulation: it sets balance storage on compatible local/forked runtimes.
+- If you call `withFundedWallet` multiple times inside the same scenario, the last one wins for `ctx.wallet` and `ctx.walletClient`.
+

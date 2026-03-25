@@ -1,5 +1,16 @@
 import type { RuntimeHandle } from "@statecraft/runtime";
-import type { PublicClient, WalletClient, TestClient, Transport, Chain, Account, Hex, TransactionReceipt } from "viem";
+import type { BundlerClient } from "@statecraft/clients";
+import type {
+  PublicClient,
+  WalletClient,
+  TestClient,
+  Transport,
+  Chain,
+  Account,
+  Hex,
+  TransactionReceipt,
+  Address,
+} from "viem";
 
 /**
  * Minimal contract build artifact: ABI plus creation and/or runtime bytecode.
@@ -87,7 +98,30 @@ export type ScenarioContext = {
   contracts?: ScenarioContracts;
   /** Named deployment records from `withDeployments` and merged across steps. */
   deployments?: Record<string, DeploymentRecord>;
+  /** HTTP RPC endpoint for a local ERC-4337 bundler. Set by {@link withBundler}. */
+  bundlerUrl?: string;
+  /** Viem-compatible bundler client for RPC methods like `eth_sendUserOperation`. Set by {@link withBundler}. */
+  bundlerClient?: BundlerClient;
+  /** ERC-4337 entry point address used by the bundler instance. Set by {@link withBundler}. */
+  entryPoint?: Address;
 };
+
+/**
+ * Bundler-only context fields added by {@link withBundler}.
+ */
+export type BundlerContext = {
+  /** HTTP RPC endpoint for the local bundler. */
+  bundlerUrl: string;
+  /** Viem-compatible bundler client for JSON-RPC methods like `eth_sendUserOperation`. */
+  bundlerClient: BundlerClient;
+  /** ERC-4337 entry point address configured for this bundler instance. */
+  entryPoint: Address;
+};
+
+/**
+ * Scenario context after {@link withBundler}: runtime clients plus bundler RPC and a typed client.
+ */
+export type ScenarioBundlerContext = ScenarioContext & BundlerContext;
 
 /** Context passed to `ContractInjection.afterSetCode` from `withContracts`. */
 export type AfterSetCodeContext = {

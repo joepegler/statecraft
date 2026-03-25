@@ -1,0 +1,53 @@
+---
+title: withChain
+description: Start a fresh local Anvil instance with an empty chain.
+---
+
+## withChain([config])
+
+### Why it is useful
+Use `withChain()` when you want fast, local integration tests without relying on any external RPC providers.
+
+### Example
+```ts twoslash [index.ts]
+import { test, expect } from "vitest";
+import { parseEther } from "viem";
+import { scenario, withChain, withFundedWallet } from "@statecraft/vitest";
+
+test(
+  "funded wallet on local chain",
+  scenario(
+    withChain(),
+    withFundedWallet({ balance: parseEther("1") }),
+    async ({ publicClient, wallet }) => {
+      expect(
+        await publicClient.getBalance({ address: wallet }),
+      ).toBe(
+        parseEther("1"),
+      );
+    },
+  ),
+);
+```
+
+### Options
+| Option | Type | Required? | Meaning (units/semantics) | Used for / affects |
+|---|---|---|---|---|
+| `chainId` | `number` | No | Anvil `--chain-id` override. | Client chain identity (affects viem `chain.id`) and runtime chain id. |
+| `key` | `string` | No | Stable correlation id forwarded to the runtime layer. | Correlates runtime config across restarts (advanced). |
+
+### Adds to context
+- `runtime`
+- `publicClient`
+- `walletClient`
+- `testClient`
+
+### Context requirements
+None; this fixture is the base runtime step.
+
+### Lifecycle
+Managed lifecycle, the fixture starts and stops Anvil for the scenario.
+
+### Notes and caveats
+This is the simplest fixture for local work, but it does not pin to any remote state.
+

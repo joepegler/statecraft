@@ -32,5 +32,8 @@
     "@statecraft/clients": "workspace:*",
     "@statecraft/runtime": "workspace:*",
     "viem": "^2.38.2"
+  },
+  "peerDependencies": {
+    "@pimlico/alto": "^0.0.20"
   }
 }

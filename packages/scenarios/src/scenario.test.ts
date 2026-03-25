@@ -1,7 +1,7 @@
 import { describe, expect, test, vi } from "vitest";
 import type { Hex } from "viem";
-import { scenario } from "../src/scenario";
-import type { EmptyScenarioContext, ScenarioContext, ScenarioStep } from "../src/types";
+import { scenario } from "./scenario";
+import type { EmptyScenarioContext, ScenarioContext, ScenarioStep } from "./types";
 
 describe("scenario composition", () => {
   test("runs steps in declared order and passes context", async () => {

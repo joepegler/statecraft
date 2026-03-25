@@ -1,6 +1,5 @@
-import { spawnSync } from "node:child_process";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
-import { parseEther } from "viem";
+import { getAddress, parseEther } from "viem";
 import {
   scenario,
   withChain,
@@ -13,15 +12,19 @@ import {
   withSnapshot,
 } from "@statecraft/vitest";
 import type { ContractArtifact } from "@statecraft/vitest";
-import { startRuntime, stopRuntime, type RuntimeHandle } from "@statecraft/runtime";
+import {
+  startRuntime,
+  stopRuntime,
+  type RuntimeHandle,
+} from "@statecraft/runtime";
 import answerArtifact from "../artifacts/Answer.json";
 import { erc20Abi } from "viem";
 
-const hasAnvil =
-  spawnSync("anvil", ["--version"], { stdio: "ignore" }).status === 0;
-const hasMainnetRpc = Boolean(process.env.MAINNET_RPC_URL);
+// Use viem's EIP-55 checksum normalization so we don't depend on manually-cased literals.
+const wethAddress = getAddress("0xC02aaA39b223FE8D0A0E5C4F27eAD9083C756Cc2");
+const usdcAddress = getAddress("0xA0b86991c6218b36c1d19D4a2e9Eb0ce3606eB48");
 
-describe.runIf(hasAnvil)("suite-scoped runtime (external lifecycle)", () => {
+describe("suite-scoped runtime (external lifecycle)", () => {
   let runtime: RuntimeHandle;
 
   beforeAll(async () => {
@@ -51,7 +54,10 @@ describe.runIf(hasAnvil)("suite-scoped runtime (external lifecycle)", () => {
       withFundedWallet({ balance: parseEther("1") }),
       async ({ wallet, publicClient, testClient }) => {
         const original = await publicClient.getBalance({ address: wallet });
-        await testClient.setBalance({ address: wallet, value: parseEther("9") });
+        await testClient.setBalance({
+          address: wallet,
+          value: parseEther("9"),
+        });
         const changed = await publicClient.getBalance({ address: wallet });
         expect(original).toBe(parseEther("1"));
         expect(changed).toBe(parseEther("9"));
@@ -60,7 +66,7 @@ describe.runIf(hasAnvil)("suite-scoped runtime (external lifecycle)", () => {
   });
 });
 
-test.runIf(hasAnvil)(
+test(
   "fresh chain + funded wallet",
   scenario(
     withChain(),
@@ -74,7 +80,7 @@ test.runIf(hasAnvil)(
   ),
 );
 
-test.runIf(hasAnvil && hasMainnetRpc)(
+test(
   "forked chain + funded wallet + real contract call",
   scenario(
     withFork({
@@ -85,7 +91,6 @@ test.runIf(hasAnvil && hasMainnetRpc)(
       balance: parseEther("1"),
     }),
     async ({ wallet, publicClient }) => {
-      const wethAddress = "0xC02aaA39b223FE8D0A0E5C4F27eAD9083C756Cc2";
       const tokenBalance = await publicClient.readContract({
         address: wethAddress,
         abi: erc20Abi,
@@ -98,7 +103,7 @@ test.runIf(hasAnvil && hasMainnetRpc)(
   ),
 );
 
-test.runIf(hasAnvil && hasMainnetRpc)(
+test(
   "forked chain + funded wallet + USDC via withFundedWallet.erc20",
   scenario(
     withFork({
@@ -109,15 +114,14 @@ test.runIf(hasAnvil && hasMainnetRpc)(
       balance: parseEther("1"),
       erc20: [
         {
-          token: "0xA0b86991c6218b36c1d19D4a2e9Eb0ce3606eB48",
+          token: usdcAddress,
           amount: 1_000_000n,
         },
       ],
     }),
     async ({ wallet, publicClient }) => {
-      const usdc = "0xA0b86991c6218b36c1d19D4a2e9Eb0ce3606eB48" as const;
       const tokenBalance = await publicClient.readContract({
-        address: usdc,
+        address: usdcAddress,
         abi: erc20Abi,
         functionName: "balanceOf",
         args: [wallet],
@@ -127,7 +131,7 @@ test.runIf(hasAnvil && hasMainnetRpc)(
   ),
 );
 
-test.runIf(hasAnvil && hasMainnetRpc)(
+test(
   "forked chain + funded wallet + withErc20Balance step",
   scenario(
     withFork({
@@ -138,13 +142,12 @@ test.runIf(hasAnvil && hasMainnetRpc)(
       balance: parseEther("1"),
     }),
     withErc20Balance({
-      token: "0xA0b86991c6218b36c1d19D4a2e9Eb0ce3606eB48",
+      token: usdcAddress,
       amount: 1_000_000n,
     }),
     async ({ wallet, publicClient }) => {
-      const usdc = "0xA0b86991c6218b36c1d19D4a2e9Eb0ce3606eB48" as const;
       const tokenBalance = await publicClient.readContract({
-        address: usdc,
+        address: usdcAddress,
         abi: erc20Abi,
         functionName: "balanceOf",
         args: [wallet],
@@ -154,7 +157,7 @@ test.runIf(hasAnvil && hasMainnetRpc)(
   ),
 );
 
-test.runIf(hasAnvil)(
+test(
   "deployment example",
   scenario(
     withChain(),
@@ -176,7 +179,7 @@ test.runIf(hasAnvil)(
   ),
 );
 
-test.runIf(hasAnvil)(
+test(
   "contract injection example",
   scenario(
     withChain(),

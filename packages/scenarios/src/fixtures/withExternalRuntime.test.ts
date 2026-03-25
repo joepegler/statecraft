@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from "vitest";
-import { withExternalRuntime } from "../src/fixtures/withExternalRuntime";
+import { withExternalRuntime } from "./withExternalRuntime";
 
 describe("withExternalRuntime", () => {
   test("attaches caller-owned runtime clients and forwards context", async () => {

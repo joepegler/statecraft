@@ -7,6 +7,7 @@ export {
   withSnapshot,
   withFundedWallet,
   withErc20Balance,
+  withBundler,
   withContracts,
   withDeployments,
 } from "@statecraft/scenarios";
@@ -15,6 +16,8 @@ export type {
   AfterDeployContext,
   AfterSetCodeContext,
   ContractArtifact,
+  BundlerContext,
+  ScenarioBundlerContext,
   DeploymentArgsResolver,
   DeploymentRecord,
   EmptyScenarioContext,
@@ -34,4 +37,5 @@ export type {
   WithContractsConfig,
   WithDeploymentsConfig,
   DeploymentSpec,
+  WithBundlerConfig,
 } from "@statecraft/scenarios";

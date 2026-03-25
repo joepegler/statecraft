@@ -1,0 +1,57 @@
+---
+title: withContracts
+description: Inject runtime bytecode at fixed addresses (test-only) with optional typed contract handles.
+---
+
+## `withContracts({ ... })`
+
+### Why it is useful
+Use `withContracts()` when you want fast, deterministic contract setup at known addresses, without running constructors or worrying about deployment ordering.
+
+### Example
+```ts twoslash [index.ts]
+import { test, expect } from "vitest";
+import { scenario, withChain, withContracts } from "@statecraft/vitest";
+
+const ANSWER_ADDRESS = "0x1000000000000000000000000000000000000001";
+
+test(
+  "runtime bytecode is installed and contract handle exists",
+  scenario(
+    withChain(),
+    withContracts({
+      answer: {
+        artifact: {
+          // Twoslash only type-checks this example; runtime execution is not required here.
+          deployedBytecode: "0x00",
+        },
+        address: ANSWER_ADDRESS,
+      },
+    }),
+    async ({ contracts }) => {
+      expect(contracts?.answer).toBeTruthy();
+    },
+  ),
+);
+```
+
+### Options
+| Option | Type | Required? | Meaning (units/semantics) | Used for / affects |
+|---|---|---|---|---|
+| `name` (record key) | `string` | Yes | Contract name you choose as the key in your config object. | Becomes `ctx.contracts[name]` for later steps. |
+| `artifact` | `ContractArtifact` | Yes | Supplies runtime bytecode via `deployedBytecode` (and optionally `abi` for typed handles). | Determines what `testClient.setCode` installs, and whether a typed contract handle is produced. |
+| `address` | `Hex` | Yes | Address where the runtime bytecode is installed. | Controls the fixed address used for subsequent calls/reads. |
+| `afterSetCode` | `(ctx) => Promise` | No | Optional async hook called after `setCode`. | Lets you seed extra storage or perform node-only setup for this contract. |
+
+### Adds to context
+- `contracts` (merged across entries and steps)
+
+### Context requirements
+- Requires runtime + clients from `withChain`, `withFork`, or `withExternalRuntime` (for `ctx.testClient`).
+
+### Lifecycle
+Managed middleware that installs bytecode, then forwards to `next`.
+
+### Notes and caveats
+Use `withContracts()` for injecting known runtime bytecode at known addresses. It is optimized for setup speed and deterministic addressing, not for constructor semantics.
+

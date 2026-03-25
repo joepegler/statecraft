@@ -3,88 +3,74 @@ title: Quickstart
 description: Install Statecraft in a Vitest project, run a minimal withChain scenario first, then move to a pinned fork with withFork and withFundedWallet.
 ---
 
+import * as RadixTabs from "@radix-ui/react-tabs";
+
 # Quickstart
-
-This page gets you from install to a working scenario quickly.
-
-## Prerequisites
-
-- `vitest` test runner
-- `viem` clients/utilities
-- [`anvil`](https://book.getfoundry.sh/forge/anvil) on your `PATH` (for local runtime/fork execution)
-
-For forked examples, set:
-
-```bash
-export MAINNET_RPC_URL="https://..."
-```
 
 ## Install
 
-Choose one package manager:
+<RadixTabs.Root defaultValue="agent" className="quickstartTabs">
+  <RadixTabs.List aria-label="Quickstart install mode">
+    <RadixTabs.Trigger value="agent">agent</RadixTabs.Trigger>
+    <RadixTabs.Trigger value="human">human</RadixTabs.Trigger>
+  </RadixTabs.List>
 
-```bash
-bun add -D @statecraft/vitest vitest viem
-```
+  <RadixTabs.Content value="agent">
+    Fetch the terminal-friendly setup checklist:
 
-```bash
-npm install -D @statecraft/vitest vitest viem
-```
+    ```bash
+    Read https://statecraft.services/skill.md and set up statecraft
+    ```
 
-## Step 1: first passing scenario (local chain)
+    Run the checklist commands in your project directory.
+  </RadixTabs.Content>
 
-Start with `withChain()` so you can run without external RPC:
+  <RadixTabs.Content value="human">
+    Install Statecraft into your project as a dev dependency.
 
-```ts twoslash
-import { test, expect } from "vitest";
-import { parseEther } from "viem";
-import { scenario, withChain, withFundedWallet } from "@statecraft/vitest";
+    Prerequisites:
 
-test(
-  "funded wallet on local chain",
-  scenario(
-    withChain(),
-    withFundedWallet({
-      balance: parseEther("1"),
-    }),
-    async ({ wallet, publicClient }) => {
-      const balance = await publicClient.getBalance({ address: wallet });
-      //      ^?
-      expect(balance).toBe(parseEther("1"));
-      //    ^?
-    },
-  ),
-);
-```
+    - `anvil` (Foundry) available on your `PATH` (local runtime and pinned forks are powered by Anvil)
 
-## Step 2: switch to a pinned fork
+    If you do not have Anvil yet, install Foundry:
 
-Once the local scenario works, move to `withFork()` for real mainnet state while staying deterministic:
+    ```bash
+    curl -L https://foundry.paradigm.xyz | bash
+    ```
 
-```ts twoslash
-import { test, expect } from "vitest";
-import { parseEther } from "viem";
-import { scenario, withFork, withFundedWallet } from "@statecraft/vitest";
+    Choose one package manager:
 
-test(
-  "funded wallet on pinned mainnet fork",
-  scenario(
-    withFork({
-      rpcUrl: process.env.MAINNET_RPC_URL!,
-      blockNumber: 22_000_000n,
-    }),
-    withFundedWallet({
-      balance: parseEther("1"),
-    }),
-    async ({ wallet, publicClient }) => {
-      const balance = await publicClient.getBalance({ address: wallet });
-      expect(balance).toBe(parseEther("1"));
-    },
-  ),
-);
-```
+    <RadixTabs.Root defaultValue="bun" className="quickstartPkgTabs">
+      <RadixTabs.List aria-label="Package manager">
+        <RadixTabs.Trigger value="pnpm">pnpm</RadixTabs.Trigger>
+        <RadixTabs.Trigger value="bun">bun</RadixTabs.Trigger>
+        <RadixTabs.Trigger value="npm">npm</RadixTabs.Trigger>
+      </RadixTabs.List>
+
+      <RadixTabs.Content value="pnpm">
+        ```bash
+        pnpm add -D @statecraft/vitest @pimlico/alto vitest viem
+        ```
+      </RadixTabs.Content>
+
+      <RadixTabs.Content value="bun">
+        ```bash
+        bun add -D @statecraft/vitest @pimlico/alto vitest viem
+        ```
+      </RadixTabs.Content>
+
+      <RadixTabs.Content value="npm">
+        ```bash
+        npm install -D @statecraft/vitest @pimlico/alto vitest viem
+        ```
+      </RadixTabs.Content>
+    </RadixTabs.Root>
+  </RadixTabs.Content>
+</RadixTabs.Root>
 
 ## Next steps
+
+To switch from local chain to a deterministic mainnet state, use `withFork({ rpcUrl, blockNumber })`, and keep `blockNumber` pinned to a specific bigint literal.
 
 `packages/examples/examples/scenarios.test.ts` includes:
 
@@ -95,13 +81,12 @@ test(
 - real deployment flow with `withDeployments`
 - suite-scoped runtime reuse with `withExternalRuntime` plus `withSnapshot`
 
-When you are ready for fixture ordering, lifecycle terminology (managed vs external), and typing behavior, read [Core concepts](/core-concepts).
+When you are ready for fixture ordering, lifecycle terminology (managed vs external), and typing behavior, read [Overview](/overview).
 
-## ERC-20 balances (optional)
+For parameter-level docs and examples of token seeding, contract setup, and isolation, see the fixture reference pages:
 
-On Anvil-style local/forked nodes, you can seed token balances in two ways:
-
-- `withFundedWallet({ erc20: [...] })` when recipient is the scenario wallet
-- `withErc20Balance({ token, amount, to? })` when you need explicit recipient control
-
-See [Core concepts](/core-concepts#erc-20-balance-dealing) for behavior and caveats.
+- [Runtime source fixtures](/fixtures/runtime)
+- [Wallets & balance fixtures](/fixtures/wallets)
+- [Tokens & ERC-20 fixtures](/fixtures/tokens)
+- [Contracts & deployment fixtures](/fixtures/contracts)
+- [Isolation fixtures](/fixtures/isolation)
