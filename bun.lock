@@ -27,6 +27,7 @@
       "name": "@st8craft/examples",
       "version": "0.1.0",
       "dependencies": {
+        "@pimlico/alto": "^0.0.20",
         "@st8craft/vitest": "workspace:*",
         "viem": "^2.38.2",
       },

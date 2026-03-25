@@ -11,6 +11,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@pimlico/alto": "^0.0.20",
     "@st8craft/vitest": "workspace:*",
     "viem": "^2.38.2"
   }

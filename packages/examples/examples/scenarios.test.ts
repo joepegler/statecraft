@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import { getAddress, parseEther } from "viem";
 import {
   scenario,
+  withBundler,
   withChain,
   withExternalRuntime,
   withContracts,
@@ -23,6 +24,8 @@ import { erc20Abi } from "viem";
 // Use viem's EIP-55 checksum normalization so we don't depend on manually-cased literals.
 const wethAddress = getAddress("0xC02aaA39b223FE8D0A0E5C4F27eAD9083C756Cc2");
 const usdcAddress = getAddress("0xA0b86991c6218b36c1d19D4a2e9Eb0ce3606eB48");
+/** ERC-4337 EntryPoint deployed on Ethereum mainnet (matches `withBundler` tests and Alto defaults). */
+const entryPoint4337 = getAddress("0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789");
 
 describe("suite-scoped runtime (external lifecycle)", () => {
   let runtime: RuntimeHandle;
@@ -65,6 +68,24 @@ describe("suite-scoped runtime (external lifecycle)", () => {
     )();
   });
 });
+
+test(
+  "forked chain + withBundler exposes bundler RPC",
+  scenario(
+    withFork({
+      rpcUrl: process.env.VITE_RPC_URL!,
+      blockNumber: 22_000_000n,
+    }),
+    withBundler({ entryPoint: entryPoint4337, mode: "alto" }),
+    async ({ entryPoint, bundlerUrl, bundlerClient }) => {
+      expect(entryPoint).toBe(entryPoint4337);
+      expect(bundlerUrl).toMatch(/^http:\/\/127\.0\.0\.1:\d+$/);
+      const supported = await bundlerClient.getSupportedEntryPoints();
+      const normalized = supported.map((a) => getAddress(a));
+      expect(normalized).toContain(entryPoint4337);
+    },
+  ),
+);
 
 test(
   "fresh chain + funded wallet",
