@@ -1,5 +1,13 @@
 # @st8craft/clients
 
+## 0.1.3
+
+### Patch Changes
+
+- a563df0: Test deployment
+- Updated dependencies [a563df0]
+  - @st8craft/runtime@0.1.3
+
 ## 0.1.2
 
 ### Patch Changes
