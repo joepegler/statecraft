@@ -84,7 +84,7 @@ test(
   "forked chain + funded wallet + real contract call",
   scenario(
     withFork({
-      rpcUrl: process.env.MAINNET_RPC_URL!,
+      rpcUrl: process.env.RPC_URL!,
       blockNumber: 22_000_000n,
     }),
     withFundedWallet({
@@ -107,7 +107,7 @@ test(
   "forked chain + funded wallet + USDC via withFundedWallet.erc20",
   scenario(
     withFork({
-      rpcUrl: process.env.MAINNET_RPC_URL!,
+      rpcUrl: process.env.RPC_URL!,
       blockNumber: 22_000_000n,
     }),
     withFundedWallet({
@@ -135,7 +135,7 @@ test(
   "forked chain + funded wallet + withErc20Balance step",
   scenario(
     withFork({
-      rpcUrl: process.env.MAINNET_RPC_URL!,
+      rpcUrl: process.env.RPC_URL!,
       blockNumber: 22_000_000n,
     }),
     withFundedWallet({

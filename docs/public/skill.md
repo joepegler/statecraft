@@ -25,7 +25,7 @@ npm install -D @pimlico/alto
 
 Optional for fork tests:
 
-- set MAINNET_RPC_URL to a reachable HTTP RPC endpoint
+- set RPC_URL to a reachable HTTP RPC endpoint
 - pin blockNumber as a bigint literal
 
 Create a compile-check test file named statecraft.try.test.ts with:
