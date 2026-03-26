@@ -2,4 +2,4 @@
 "@st8craft/core": patch
 ---
 
-Bump
+Removed pr template
