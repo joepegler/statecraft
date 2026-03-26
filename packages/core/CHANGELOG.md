@@ -1,5 +1,11 @@
 # @st8craft/core
 
+## 0.3.6
+
+### Patch Changes
+
+- 46a90b2: Removed pr template
+
 ## 0.3.5
 
 ### Patch Changes
