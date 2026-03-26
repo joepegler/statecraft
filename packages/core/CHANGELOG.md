@@ -1,5 +1,11 @@
 # @st8craft/core
 
+## 0.3.7
+
+### Patch Changes
+
+- 4e2c4a4: withImpersonation
+
 ## 0.3.6
 
 ### Patch Changes
