@@ -19,6 +19,8 @@ describe("withExternalRuntime", () => {
     expect(next).toHaveBeenCalledTimes(1);
     const [ctx] = next.mock.calls[0]!;
     expect(ctx.runtime.key).toBe("suite");
+    expect(ctx.runtimeMode).toBe("chain");
+    expect(ctx.chain).toBeDefined();
     expect(ctx.publicClient).toBeDefined();
     expect(ctx.walletClient).toBeDefined();
     expect(ctx.testClient).toBeDefined();

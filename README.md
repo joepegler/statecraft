@@ -6,33 +6,69 @@
 [![@st8craft/core line coverage](https://img.shields.io/badge/%40st8craft%2Fcore%20lines-91.84%25-brightgreen)](https://github.com/joepegler/statecraft/actions/workflows/sdk-tests.yml)
 [![Docs](https://img.shields.io/badge/docs-statecraft.services-2f6feb?style=flat)](https://statecraft.services)
 
-Statecraft makes Ethereum integration tests deterministic and composable in TypeScript.
+Statecraft is a TypeScript-first testing primitive for Ethereum integration tests that replaces ad hoc `beforeEach` setup and brittle helper stacks with one explicit scenario pipeline. You compose deterministic fixtures like `withChain`, `withFork`, and `withFundedWallet` into a single test function, so setup order is visible, repeatable, and easy to reason about. If your Vitest integration tests are getting flaky or hard to maintain, Statecraft gives you a cleaner path without replacing viem, Anvil, or your test runner.
 
-## Current maturity
+## First Success in 60 Seconds
 
-Statecraft is an early-stage, 0.x SDK. Public APIs and behaviors may change between minor versions, so review the changelog before upgrading.
+### Requirements
 
-## Security and support
+Statecraft relies on [Anvil](https://book.getfoundry.sh/forge/anvil) from [Foundry](https://book.getfoundry.sh/getting-started/installation) for local and forked runtimes.
 
-- Security reporting: see [SECURITY.md](./SECURITY.md).
-- Support and questions: open an issue on GitHub: https://github.com/joepegler/statecraft/issues.
-- Community expectations: see [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md).
+For local development:
 
-## Release verification
+```bash
+curl -L https://foundry.paradigm.xyz | bash
+```
 
-Releases to npm are published via Changesets and include CI build and test verification.
-Additionally, the publish step validates the packed tarball to ensure it contains the expected `dist/` output.
+Ensure `anvil` is available on your `PATH`.
 
-Key checks:
+For GitHub Actions, set up Foundry before running tests:
 
-- `bun run build` and `vitest run` as part of CI (see [`sdk-tests.yml`](https://github.com/joepegler/statecraft/blob/main/.github/workflows/sdk-tests.yml)).
-- `scripts/validate-publish-manifests.mjs` runs during the publish workflow to validate the final npm package contents (see [`publish-npm.yml`](https://github.com/joepegler/statecraft/blob/main/.github/workflows/publish-npm.yml)).
+```yaml
+- name: Setup Foundry
+  uses: foundry-rs/foundry-toolchain@v1
 
-Most suites start clean, then degrade into hidden setup, flaky fork state, and copy-pasted helper stacks. Statecraft gives you one explicit scenario pipeline so each test declares its environment up front.
+- name: Run SDK Tests
+  run: bun run test:ci
+```
 
-If you already use viem + Anvil with a JavaScript test runner, Statecraft is not a replacement for those tools. It is a testing primitive for composing setup safely and repeatably. Examples below use Vitest; `scenario(...)` returns an async function you can pass to other runners (Jest, Node `node:test`, and similar).
+### Install
 
-## Before vs After
+```bash
+bun add -D @st8craft/core
+```
+
+### Create a local chain scenario (quick win)
+
+```ts
+import { test, expect } from "vitest";
+import { scenario, withChain, withFundedWallet } from "@st8craft/core";
+
+test(
+  "runs a funded wallet scenario in one test",
+  scenario(
+    withChain(),
+    withFundedWallet({
+      balance: 1_000_000_000_000_000_000n, // 1 ETH in wei
+    }),
+    async ({ wallet, publicClient }) => {
+      const balance = await publicClient.getBalance({ address: wallet });
+      expect(balance).toBe(1_000_000_000_000_000_000n);
+    },
+  ),
+);
+```
+
+## Why Switch from Raw Hooks and Helper Stacks
+
+Most suites start clean, then degrade into hidden setup, flaky fork state, and copy-pasted helper stacks. Statecraft keeps setup as explicit middleware in one place:
+
+- Deterministic by default, pin fork blocks and keep state setup explicit.
+- Composable setup, add only the `withX` fixtures a test needs.
+- Honest context flow, each fixture extends context and passes it forward in order.
+- Runner-friendly design, `scenario(...)` returns an async function for Vitest, Jest, or `node:test`.
+
+## Before vs After (Real Forked State)
 
 Without Statecraft, setup usually lives in custom helpers plus `beforeEach`, and ordering guarantees are easy to break.
 
@@ -64,60 +100,15 @@ test(
       token: USDC_MAINNET,
       amount: 1_000_000n, // 1 USDC (6 decimals)
     }),
-    async ({ wallet, publicClient }) => {
+    async ({ walletClient, publicClient }) => {
       const usdc = await publicClient.readContract({
         address: USDC_MAINNET,
         abi: erc20Abi,
         functionName: "balanceOf",
-        args: [wallet],
+        args: [walletClient.account.address],
       });
 
       expect(usdc).toBe(1_000_000n);
-    },
-  ),
-);
-```
-
-## Why Statecraft
-
-- Deterministic by default: pin fork block numbers and keep state setup explicit.
-- Composable setup: build scenarios from small `withX` steps instead of one large helper.
-- Honest test context: each step extends context and passes it forward in order.
-
-## 60-Second Quickstart
-
-### Requirements
-
-Local execution uses [Anvil](https://book.getfoundry.sh/forge/anvil) from [Foundry](https://book.getfoundry.sh/getting-started/installation).
-
-```bash
-curl -L https://foundry.paradigm.xyz | bash
-```
-
-Ensure `anvil` is available on your `PATH`.
-
-### Install
-
-```bash
-bun add -D @st8craft/core
-```
-
-### Create a local chain scenario
-
-```ts
-import { test, expect } from "vitest";
-import { scenario, withChain, withFundedWallet } from "@st8craft/core";
-
-test(
-  "runs a funded wallet scenario in one test",
-  scenario(
-    withChain(),
-    withFundedWallet({
-      balance: 1_000_000_000_000_000_000n, // 1 ETH in wei
-    }),
-    async ({ wallet, publicClient }) => {
-      const balance = await publicClient.getBalance({ address: wallet });
-      expect(balance).toBe(1_000_000_000_000_000_000n);
     },
   ),
 );
@@ -194,3 +185,25 @@ Run docs locally:
 ```bash
 bun run docs:dev
 ```
+
+## Project Status
+
+### Current maturity
+
+Statecraft is an early-stage, 0.x SDK. Public APIs and behaviors may change between minor versions, so review the changelog before upgrading.
+
+### Security and support
+
+- Security reporting: see [SECURITY.md](./SECURITY.md).
+- Support and questions: open an issue on GitHub: https://github.com/joepegler/statecraft/issues.
+- Community expectations: see [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md).
+
+### Release verification
+
+Releases to npm are published via Changesets and include CI build and test verification.
+Additionally, the publish step validates the packed tarball to ensure it contains the expected `dist/` output.
+
+Key checks:
+
+- `bun run build` and `vitest run` as part of CI (see [`sdk-tests.yml`](https://github.com/joepegler/statecraft/blob/main/.github/workflows/sdk-tests.yml)).
+- `scripts/validate-publish-manifests.mjs` runs during the publish workflow to validate the final npm package contents (see [`publish-npm.yml`](https://github.com/joepegler/statecraft/blob/main/.github/workflows/publish-npm.yml)).

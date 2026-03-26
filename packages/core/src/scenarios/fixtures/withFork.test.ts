@@ -61,11 +61,15 @@ describe("withFork", () => {
       key: "mainnet-fork",
     });
 
-    await expect(
-      step({ seed: true } as any, async () => {
-        throw new Error("boom");
-      }),
-    ).rejects.toThrow("boom");
+    const next = vi.fn(async (nextCtx: any) => {
+      expect(nextCtx.runtime).toBe(runtime);
+      expect(nextCtx.runtimeMode).toBe("fork");
+      expect(nextCtx.chain).toBe(clients.publicClient.chain);
+      expect(nextCtx.publicClient).toBe(clients.publicClient);
+      expect(nextCtx.walletClient).toBe(clients.walletClient);
+      expect(nextCtx.testClient).toBe(clients.testClient);
+    });
+    await step({ seed: true } as any, next);
 
     expect(startRuntime).toHaveBeenCalledWith({
       mode: "fork",

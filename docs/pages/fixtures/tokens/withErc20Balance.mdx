@@ -27,13 +27,13 @@ test(
       token: USDC,
       amount: 1_000_000n,
     }),
-    async ({ publicClient, wallet }) => {
+    async ({ publicClient, walletClient }) => {
       expect(
         await publicClient.readContract({
           address: USDC,
           abi: erc20Abi,
           functionName: "balanceOf",
-          args: [wallet],
+          args: [walletClient.account!.address],
         }),
       ).toBe(1_000_000n);
     },

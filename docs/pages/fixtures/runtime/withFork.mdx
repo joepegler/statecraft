@@ -23,9 +23,9 @@ test(
       blockNumber: 22_000_000n,
     }),
     withFundedWallet({ balance: 1n }),
-    async ({ publicClient, wallet }) => {
+    async ({ publicClient, walletClient }) => {
       expect(
-        await publicClient.getBalance({ address: wallet }),
+        await publicClient.getBalance({ address: walletClient.account!.address }),
       ).toBe(1n);
     },
   ),
@@ -42,6 +42,8 @@ test(
 
 ### Adds to context
 - `runtime`
+- `runtimeMode` (`"fork"`)
+- `chain`
 - `publicClient`
 - `walletClient`
 - `testClient`

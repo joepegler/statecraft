@@ -75,11 +75,11 @@ test("withBundler output type is scenario bundler context", () => {
   expectTypeOf<StepOut<ReturnType<typeof withBundler>>>().toEqualTypeOf<ScenarioBundlerContext>();
 });
 
-test("scenario(chain, bundler, test) accepts ScenarioTest<ScenarioBundlerContext>", () => {
+test("scenario(fork, bundler, test) accepts ScenarioTest<ScenarioBundlerContext>", () => {
   const t: ScenarioTest<ScenarioBundlerContext> = async (_ctx) => {};
   expectTypeOf(
     scenario(
-      withChain(),
+      withFork({ rpcUrl: "http://example.invalid", blockNumber: 1n }),
       withBundler({
         entryPoint: ENTRYPOINT_V07,
       }),

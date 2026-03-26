@@ -26,6 +26,8 @@ export function withChain(config: WithChainConfig = {}): ScenarioStep<EmptyScena
       await next({
         ...ctx,
         runtime,
+        runtimeMode: "chain",
+        chain: clients.publicClient.chain,
         publicClient: clients.publicClient,
         walletClient: clients.walletClient,
         testClient: clients.testClient,

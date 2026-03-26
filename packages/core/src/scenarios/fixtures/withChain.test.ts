@@ -33,6 +33,8 @@ describe("withChain", () => {
 
     const next = vi.fn(async (nextCtx: any) => {
       expect(nextCtx.runtime).toBe(runtime);
+      expect(nextCtx.runtimeMode).toBe("chain");
+      expect(nextCtx.chain).toBe(clients.publicClient.chain);
       expect(nextCtx.publicClient).toBe(clients.publicClient);
       expect(nextCtx.walletClient).toBe(clients.walletClient);
       expect(nextCtx.testClient).toBe(clients.testClient);

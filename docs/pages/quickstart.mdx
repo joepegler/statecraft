@@ -7,15 +7,36 @@ import * as RadixTabs from "@radix-ui/react-tabs";
 
 # Quickstart
 
-## Prerequisites (local execution)
+## Prerequisites
 
-Statecraft runs local EVM instances via Anvil (Foundry). `withChain()` and `withFork()` both start an Anvil runtime, so `anvil` must be available on your `PATH`.
+<RadixTabs.Root defaultValue="local" className="quickstartPrereqTabs">
+  <RadixTabs.List aria-label="Execution environment">
+    <RadixTabs.Trigger value="local">local</RadixTabs.Trigger>
+    <RadixTabs.Trigger value="github-actions">github actions</RadixTabs.Trigger>
+  </RadixTabs.List>
 
-If you do not have Foundry installed yet:
+  <RadixTabs.Content value="local">
+    Statecraft runs local EVM instances via Anvil (Foundry). `withChain()` and `withFork()` both start an Anvil runtime, so `anvil` must be available on your `PATH`.
 
-```bash
-curl -L https://foundry.paradigm.xyz | bash
-```
+    If you do not have Foundry installed yet:
+
+    ```bash
+    curl -L https://foundry.paradigm.xyz | bash
+    ```
+  </RadixTabs.Content>
+
+  <RadixTabs.Content value="github-actions">
+    In CI, the important prerequisite is **Setup Foundry** before tests run.
+
+    ```yaml
+    - name: Setup Foundry
+      uses: foundry-rs/foundry-toolchain@v1
+
+    - name: Run SDK Tests
+      run: bun run test:ci
+    ```
+  </RadixTabs.Content>
+</RadixTabs.Root>
 
 ## Install
 
@@ -30,19 +51,19 @@ Choose a package manager:
 
   <RadixTabs.Content value="pnpm">
     ```bash
-    pnpm add -D @st8craft/core vitest viem
+    pnpm add -D @st8craft/core viem
     ```
   </RadixTabs.Content>
 
   <RadixTabs.Content value="bun">
     ```bash
-    bun add -D @st8craft/core vitest viem
+    bun add -D @st8craft/core viem
     ```
   </RadixTabs.Content>
 
   <RadixTabs.Content value="npm">
     ```bash
-    npm install -D @st8craft/core vitest viem
+    npm install -D @st8craft/core viem
     ```
   </RadixTabs.Content>
 </RadixTabs.Root>
@@ -61,9 +82,9 @@ test(
   scenario(
     withChain(),
     withFundedWallet({ balance: parseEther("1") }),
-    async ({ publicClient, wallet }) => {
+    async ({ publicClient, walletClient }) => {
       const balance = await publicClient.getBalance({
-        address: wallet,
+        address: walletClient.account!.address,
       });
 
       expect(balance).toBe(parseEther("1"));

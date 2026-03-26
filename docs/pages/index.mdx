@@ -16,26 +16,25 @@ import { HomePage, Button } from "vocs/components";
     Ethereum integration tests without setup glue code.
   </HomePage.Tagline>
   <HomePage.Description>
-    Statecraft wraps viem + Anvil into helpers like{" "}
-    <a href="/fixtures/runtime">withFork</a>, <a href="/fixtures/wallets">withFundedWallet</a>,{" "}
-    <a href="/fixtures/tokens">withErc20Balance</a>, and{" "}
-    <a href="/fixtures/contracts">withDeployments</a>, plus{" "}
-    <a href="https://docs.pimlico.io/infra/bundler">withBundler</a> for ERC-4337 bundling. Use{" "}
-    <a href="/fixtures/runtime/withExternalRuntime">withExternalRuntime</a> when a file should share one runtime across sequential tests,
-    while separate files still run in parallel on their own runtime instances for faster suites.
-    Doc examples use Vitest; pass `scenario(...)` to any runner that supports async test callbacks.
-    Release verification, including CI build/test checks and npm tarball validation, is documented in <a href="https://github.com/joepegler/statecraft#release-verification">README.md</a>.
+    Statecraft turns brittle hooks and helper stacks into explicit, typed scenario fixtures with isolated chains per file, so setup stays deterministic and suites run in parallel.
   </HomePage.Description>
   <HomePage.Buttons>
     <HomePage.Button href="/quickstart" variant="accent">
       Get Started
     </HomePage.Button>
-    <HomePage.Button href="/overview">Learn the model</HomePage.Button>
+    <HomePage.Button href="/overview">Why it works</HomePage.Button>
     <Button href="https://github.com/joepegler/statecraft">
       GitHub
     </Button>
   </HomePage.Buttons>
 </HomePage.Root>
+
+## Why teams switch
+
+- Hidden setup order becomes explicit fixture order in `scenario(...)`.
+- Ad hoc fork setup becomes pinned, deterministic chain state.
+- Independent files can run in parallel on separate runtimes for faster suites.
+- Helper sprawl becomes one readable test pipeline.
 
 <div style={{ position: "relative", overflow: "hidden", marginTop: 28 }}>
 
@@ -48,19 +47,28 @@ import { HomePage, Button } from "vocs/components";
       padding: "0 16px",
     }}
   >
-
     ```ts
     import { expect, test } from "vitest";
-    import { parseEther } from "viem";
-    import { scenario, withChain, withFundedWallet } from "@st8craft/core";
+    import { erc20Abi, parseEther } from "viem";
+    import {
+      scenario,
+      withChain,
+      withFundedWallet,
+      withErc20Balance,
+    } from "@st8craft/core";
 
     test(
-      "funded wallet starts with 1 ETH",
+      "fork + funded wallet + USDC balance",
       scenario(
         withChain(),
         withFundedWallet({ balance: parseEther("1") }),
+        withErc20Balance({
+          token: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48", // USDC
+          amount: parseUnits("1_000_000", 6),
+        }),
         async ({ publicClient, walletClient }) => {
-          const balance = await publicClient.getBalance({ address: walletClient.address });
+          // walletClient now has both 1 ETH and seeded USDC
+          const balance = await publicClient.getBalance({ address: walletClient.account.address });
           expect(balance).toBe(parseEther("1"));
         },
       ),
