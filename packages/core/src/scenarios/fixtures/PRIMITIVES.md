@@ -26,7 +26,7 @@ withFundedWallet: 5
 withWallet: 2
 withPrivateKey: 2
 withMultipleWallets: 3
-withImpersonatedAccount: 4
+withImpersonation: 4
 withNonce: 2
 withBalance: 3
 

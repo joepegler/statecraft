@@ -1,0 +1,62 @@
+---
+title: withImpersonation
+description: Impersonate an existing account for scenario signing, with optional ETH top-up and automatic teardown.
+---
+
+## `withImpersonation({ address[, balance, stopOnExit] })`
+
+**Test runners:** Examples use Vitest `test` and `expect`. `scenario(...)` returns an async function you can pass to any runner with a similar `test` callback (for example Jest or Node `node:test`).
+
+### Why it is useful
+Use `withImpersonation()` when you need to execute transactions as an existing address (for example a forked holder or protocol actor) without private key access.
+
+### Example
+```ts twoslash [index.ts]
+import { test, expect } from "vitest";
+import { parseEther } from "viem";
+import {
+  scenario,
+  withFork,
+  withImpersonation,
+} from "@st8craft/core";
+
+test(
+  "impersonated account can sign on fork",
+  scenario(
+    withFork({
+      rpcUrl: process.env.VITE_RPC_URL!,
+      blockNumber: 22_000_000n,
+    }),
+    withImpersonation({
+      address: "0x000000000000000000000000000000000000dead",
+      balance: parseEther("1"),
+    }),
+    async ({ wallet, walletClient, publicClient }) => {
+      expect(walletClient.account!.address).toBe(wallet);
+      const eth = await publicClient.getBalance({ address: wallet });
+      expect(eth).toBe(parseEther("1"));
+    },
+  ),
+);
+```
+
+### Options
+| Option | Type | Required? | Meaning (units/semantics) | Used for / affects |
+|---|---|---|---|---|
+| `address` | `Address` | Yes | Existing account to impersonate. | Calls Anvil impersonation and becomes `walletClient.account` + `ctx.wallet`. |
+| `balance` | `bigint` | No | ETH balance to set in wei before test body runs. | Calls `testClient.setBalance` for `address`. |
+| `stopOnExit` | `boolean` | No | Whether to stop impersonation in fixture teardown. Defaults to `true`. | Controls `stopImpersonatingAccount` in `finally`. |
+
+### Adds to context
+- `wallet`
+- `walletClient`
+
+### Context requirements
+Requires runtime + clients from `withChain`, `withFork`, or `withExternalRuntime` so `ctx.testClient` exists.
+
+### Lifecycle
+This fixture does not start or stop Anvil. It manages impersonation lifecycle for the configured address and, by default, stops impersonation when downstream steps finish.
+
+### Notes and caveats
+- This behavior depends on Anvil test-client impersonation support.
+- If you set `stopOnExit: false`, impersonation remains active for the runtime until another step or test changes it.

@@ -59,7 +59,7 @@ const pageSocial: Record<
   "/fixtures/wallets": {
     twitterTitle: "Wallets & balance fixtures – Statecraft",
     twitterDescription:
-      "Fund the scenario account with withFundedWallet, optionally seed ERC-20 balances for that wallet.",
+      "Fund or impersonate scenario accounts with withFundedWallet and withImpersonation.",
   },
   "/fixtures/tokens": {
     twitterTitle: "Tokens & ERC-20 fixtures – Statecraft",
@@ -170,6 +170,10 @@ export default defineConfig({
             {
               text: "withFundedWallet",
               link: "/fixtures/wallets/withFundedWallet",
+            },
+            {
+              text: "withImpersonation",
+              link: "/fixtures/wallets/withImpersonation",
             },
           ],
         },

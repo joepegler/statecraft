@@ -2,7 +2,7 @@ name: SDK Tests
 
 on:
   pull_request:
-    branches: ["dev"]
+    branches: ["dev", "main"]
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
