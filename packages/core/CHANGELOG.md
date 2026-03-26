@@ -1,5 +1,11 @@
 # @st8craft/core
 
+## 0.3.3
+
+### Patch Changes
+
+- fbcdd45: Bump
+
 ## 0.3.2
 
 ### Patch Changes
