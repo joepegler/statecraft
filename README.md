@@ -35,7 +35,7 @@ For GitHub Actions, set up Foundry before running tests:
 ### Install
 
 ```bash
-bun add -D @st8craft/core
+bun add -D @st8craft/core @pimlico/alto viem
 ```
 
 ### Create a local chain scenario (quick win)

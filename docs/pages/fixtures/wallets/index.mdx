@@ -1,6 +1,6 @@
 ---
 title: Wallets & Balance Fixtures
-description: Create a funded scenario account with withFundedWallet, and optionally seed ERC-20 balances for that account.
+description: Use funded and impersonated account fixtures to prepare scenario signers and balances.
 ---
 
 # Wallets & Balance Fixtures
@@ -12,4 +12,5 @@ Wallet and balance fixtures prepare the scenario account that later steps (token
 ## Fixtures
 
 - [`withFundedWallet({ balance[, privateKey, erc20] })`](/fixtures/wallets/withFundedWallet)
+- [`withImpersonation({ address[, balance, stopOnExit] })`](/fixtures/wallets/withImpersonation)
 

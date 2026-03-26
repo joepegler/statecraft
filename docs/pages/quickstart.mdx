@@ -9,16 +9,14 @@ import * as RadixTabs from "@radix-ui/react-tabs";
 
 ## Prerequisites
 
-<RadixTabs.Root defaultValue="local" className="quickstartPrereqTabs">
+<RadixTabs.Root defaultValue="local" className="quickstartTabs">
   <RadixTabs.List aria-label="Execution environment">
     <RadixTabs.Trigger value="local">local</RadixTabs.Trigger>
     <RadixTabs.Trigger value="github-actions">github actions</RadixTabs.Trigger>
   </RadixTabs.List>
 
   <RadixTabs.Content value="local">
-    Statecraft runs local EVM instances via Anvil (Foundry). `withChain()` and `withFork()` both start an Anvil runtime, so `anvil` must be available on your `PATH`.
-
-    If you do not have Foundry installed yet:
+    Statecraft runs local EVM instances via Anvil (Foundry). `withChain()` and `withFork()` both start an Anvil runtime, so `anvil` must be available on your `PATH`. If you do not have Foundry installed yet:
 
     ```bash
     curl -L https://foundry.paradigm.xyz | bash
@@ -51,19 +49,19 @@ Choose a package manager:
 
   <RadixTabs.Content value="pnpm">
     ```bash
-    pnpm add -D @st8craft/core viem
+    pnpm add -D @st8craft/core viem @pimlico/alto
     ```
   </RadixTabs.Content>
 
   <RadixTabs.Content value="bun">
     ```bash
-    bun add -D @st8craft/core viem
+    bun add -D @st8craft/core viem @pimlico/alto
     ```
   </RadixTabs.Content>
 
   <RadixTabs.Content value="npm">
     ```bash
-    npm install -D @st8craft/core viem
+    npm install -D @st8craft/core viem @pimlico/alto
     ```
   </RadixTabs.Content>
 </RadixTabs.Root>
