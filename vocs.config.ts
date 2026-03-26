@@ -133,6 +133,12 @@ export default defineConfig({
   iconUrl: "/logo.png",
   ogImageUrl:
     "https://vocs.dev/api/og?logo=%logo&title=%title&description=%description",
+  socials: [
+    {
+      icon: "github",
+      link: CODE_REPOSITORY,
+    },
+  ],
   sidebar: [
     {
       text: "Introduction",

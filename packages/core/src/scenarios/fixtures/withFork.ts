@@ -42,6 +42,8 @@ export function withFork(config: WithForkConfig): ScenarioStep<EmptyScenarioCont
       await next({
         ...ctx,
         runtime,
+        runtimeMode: "fork",
+        chain: clients.publicClient.chain,
         publicClient: clients.publicClient,
         walletClient: clients.walletClient,
         testClient: clients.testClient,

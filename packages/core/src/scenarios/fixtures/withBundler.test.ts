@@ -42,6 +42,7 @@ describe("withBundler", () => {
 
     const ctx = {
       runtime: { rpcUrl: "http://127.0.0.1:8545" },
+      runtimeMode: "fork",
       publicClient: { chain: {} },
       walletClient: {},
       testClient: { setBalance: vi.fn(async () => {}) },
@@ -77,6 +78,7 @@ describe("withBundler", () => {
 
     const ctx = {
       runtime: { rpcUrl: "http://127.0.0.1:8545" },
+      runtimeMode: "fork",
       publicClient: { chain: {} },
       walletClient: {},
       testClient: { setBalance: vi.fn(async () => {}) },
@@ -103,6 +105,7 @@ describe("withBundler", () => {
       badStep(
         {
           runtime: { rpcUrl: "http://127.0.0.1:8545" },
+          runtimeMode: "fork",
           publicClient: { chain: {} },
           walletClient: {},
           testClient: { setBalance: vi.fn(async () => {}) },
@@ -110,5 +113,23 @@ describe("withBundler", () => {
         async () => {},
       ),
     ).rejects.toThrow(/only supports mode='alto'/i);
+  });
+
+  test("requires fork runtime mode", async () => {
+    const { withBundler } = await import("./withBundler.js");
+    const step = withBundler({ entryPoint: ENTRYPOINT });
+
+    await expect(
+      step(
+        {
+          runtime: { rpcUrl: "http://127.0.0.1:8545" },
+          runtimeMode: "chain",
+          publicClient: { chain: {} },
+          walletClient: {},
+          testClient: { setBalance: vi.fn(async () => {}) },
+        } as any,
+        async () => {},
+      ),
+    ).rejects.toThrow(/requires withFork\(\.\.\.\) to run first/i);
   });
 });

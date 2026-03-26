@@ -1,5 +1,5 @@
 import { createClients, type CreateClientsOptions } from "../../clients/index.js";
-import type { RuntimeHandle } from "../../runtime/index.js";
+import type { RuntimeHandle, RuntimeMode } from "../../runtime/index.js";
 import type { EmptyScenarioContext, ScenarioRuntimeClientsContext, ScenarioStep } from "../types.js";
 
 /**
@@ -9,6 +9,11 @@ import type { EmptyScenarioContext, ScenarioRuntimeClientsContext, ScenarioStep 
 export type WithExternalRuntimeConfig = {
   /** Live runtime handle created by `startRuntime(...)`. */
   runtime: RuntimeHandle;
+  /**
+   * Runtime mode for this external handle.
+   * Defaults to `chain` when omitted.
+   */
+  runtimeMode?: RuntimeMode;
   /** Optional client wiring overrides (chain identity and signer key). */
   clients?: CreateClientsOptions;
 };
@@ -26,6 +31,8 @@ export function withExternalRuntime(config: WithExternalRuntimeConfig): Scenario
     await next({
       ...ctx,
       runtime: config.runtime,
+      runtimeMode: config.runtimeMode ?? "chain",
+      chain: clients.publicClient.chain,
       publicClient: clients.publicClient,
       walletClient: clients.walletClient,
       testClient: clients.testClient,

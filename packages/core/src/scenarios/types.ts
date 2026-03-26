@@ -1,4 +1,4 @@
-import type { RuntimeHandle } from "../runtime/index.js";
+import type { RuntimeHandle, RuntimeMode } from "../runtime/index.js";
 import type { BundlerClient } from "../clients/index.js";
 import type {
   PublicClient,
@@ -68,6 +68,8 @@ export type EmptyScenarioContext = {};
  */
 export type ScenarioRuntimeClientsContext = ScenarioContext & {
   runtime: NonNullable<ScenarioContext["runtime"]>;
+  runtimeMode: NonNullable<ScenarioContext["runtimeMode"]>;
+  chain: NonNullable<ScenarioContext["chain"]>;
   publicClient: NonNullable<ScenarioContext["publicClient"]>;
   walletClient: NonNullable<ScenarioContext["walletClient"]>;
   testClient: NonNullable<ScenarioContext["testClient"]>;
@@ -86,6 +88,10 @@ export type ScenarioFundedWalletContext = ScenarioRuntimeClientsContext & {
 export type ScenarioContext = {
   /** Live anvil handle; set by `withChain` or `withFork`. */
   runtime?: RuntimeHandle;
+  /** Runtime mode (`chain` or `fork`); set by runtime fixtures. */
+  runtimeMode?: RuntimeMode;
+  /** Chain identity used by all viem clients in this scenario runtime. */
+  chain?: Chain;
   /** Viem public client; set with runtime fixtures. */
   publicClient?: PublicClient<Transport, Chain>;
   /** Viem wallet client; may be replaced by {@link withFundedWallet}. */

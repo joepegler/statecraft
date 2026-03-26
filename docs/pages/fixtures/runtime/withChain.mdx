@@ -21,9 +21,9 @@ test(
   scenario(
     withChain(),
     withFundedWallet({ balance: parseEther("1") }),
-    async ({ publicClient, wallet }) => {
+    async ({ publicClient, walletClient }) => {
       expect(
-        await publicClient.getBalance({ address: wallet }),
+        await publicClient.getBalance({ address: walletClient.account!.address }),
       ).toBe(
         parseEther("1"),
       );
@@ -40,6 +40,8 @@ test(
 
 ### Adds to context
 - `runtime`
+- `runtimeMode` (`"chain"`)
+- `chain`
 - `publicClient`
 - `walletClient`
 - `testClient`

@@ -25,6 +25,9 @@ const DEFAULT_EXECUTOR_PRIVATE_KEY =
 export function withBundler(config: WithBundlerConfig): ScenarioStep<ScenarioRuntimeClientsContext, ScenarioBundlerContext> {
   return async (ctx, next) => {
     requireRuntimeClients(ctx);
+    if (ctx.runtimeMode !== "fork") {
+      throw new Error("withBundler(...) requires withFork(...) to run first.");
+    }
 
     if (!config?.entryPoint) {
       throw new Error("withBundler(...) requires `entryPoint`.");
@@ -50,7 +53,7 @@ export function withBundler(config: WithBundlerConfig): ScenarioStep<ScenarioRun
 
     const bundlerClient: BundlerClient = createBundlerClient({
       bundlerUrl: bundler.bundlerUrl,
-      chain: ctx.publicClient.chain,
+      chain: ctx.chain,
       entryPoint: config.entryPoint,
     });
 

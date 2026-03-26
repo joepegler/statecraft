@@ -44,7 +44,8 @@ test(
 - `entryPoint`
 
 ### Context requirements
-- Requires runtime + `ctx.testClient` from `withFork` / `withExternalRuntime`.
+- Requires fork runtime context. Use `withFork(...)` first, or `withExternalRuntime({ runtime, runtimeMode: "fork" })`.
+- Requires runtime clients (`ctx.testClient`, `ctx.chain`) from a runtime source fixture.
 - Expects the host project to have the peer dependency used by Alto (`@pimlico/alto`). Docs examples are type-checked, not executed here.
 
 ### Lifecycle

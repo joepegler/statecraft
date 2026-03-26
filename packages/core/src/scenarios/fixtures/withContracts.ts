@@ -27,20 +27,29 @@ export type ContractInjection = {
  */
 export type WithContractsConfig = Record<string, ContractInjection>;
 
-type WithContractsIn = ScenarioRuntimeClientsContext & { contracts?: ScenarioContracts };
-type WithContractsOut = ScenarioRuntimeClientsContext & { contracts: ScenarioContracts };
+type WithContractsIn = ScenarioRuntimeClientsContext & {
+  contracts?: ScenarioContracts;
+};
+type WithContractsOut = ScenarioRuntimeClientsContext & {
+  contracts: ScenarioContracts;
+};
 
 /**
  * Middleware: for each entry, `setCode` at `address`, then merge contract handles into `ctx.contracts`.
  * Requires a prior `withChain` / `withFork` (runtime + clients).
  */
-export function withContracts(config: WithContractsConfig): ScenarioStep<WithContractsIn, WithContractsOut> {
+export function withContracts(
+  config: WithContractsConfig,
+): ScenarioStep<WithContractsIn, WithContractsOut> {
   return async (ctx, next) => {
     requireRuntimeClients(ctx);
     const contracts: ScenarioContracts = { ...(ctx.contracts ?? {}) };
 
     for (const [name, entry] of Object.entries(config)) {
-      const bytecode = extractBytecode(entry.artifact.deployedBytecode, `${name}.deployedBytecode`);
+      const bytecode = extractBytecode(
+        entry.artifact.deployedBytecode,
+        `${name}.deployedBytecode`,
+      );
       await ctx.testClient.setCode({
         address: entry.address,
         bytecode,
