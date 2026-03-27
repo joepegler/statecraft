@@ -30,7 +30,7 @@ describe("withImpersonation", () => {
       step({} as any, async () => {
         throw new Error("next should not run");
       }),
-    ).rejects.toThrow(/missing runtime clients/i);
+    ).rejects.toThrow(/missing runtime clients for chain "default"/i);
   });
 
   test("impersonates address, optionally sets balance, forwards context, and stops on success", async () => {
@@ -51,13 +51,17 @@ describe("withImpersonation", () => {
 
     await step(
       {
-        runtime: { rpcUrl: "http://127.0.0.1:8545" },
-        publicClient: { chain: { id: 31337 } },
-        walletClient: {},
-        testClient: {
-          impersonateAccount,
-          stopImpersonatingAccount,
-          setBalance,
+        chains: {
+          default: {
+            runtime: { rpcUrl: "http://127.0.0.1:8545" },
+            publicClient: { chain: { id: 31337 } },
+            walletClient: {},
+            testClient: {
+              impersonateAccount,
+              stopImpersonatingAccount,
+              setBalance,
+            },
+          },
         },
       } as any,
       next,
@@ -73,8 +77,8 @@ describe("withImpersonation", () => {
     });
 
     const [forwarded] = next.mock.calls[0]!;
-    expect(forwarded.wallet).toBe(address);
-    expect(forwarded.walletClient).toBe(walletClient);
+    expect(forwarded.chains!.default.wallet).toBe(address);
+    expect(forwarded.chains!.default.walletClient).toBe(walletClient);
     expect(stopImpersonatingAccount).toHaveBeenCalledWith({ address });
   });
 
@@ -91,13 +95,17 @@ describe("withImpersonation", () => {
     await expect(
       step(
         {
-          runtime: { rpcUrl: "http://127.0.0.1:8545" },
-          publicClient: { chain: { id: 31337 } },
-          walletClient: {},
-          testClient: {
-            impersonateAccount,
-            stopImpersonatingAccount,
-            setBalance: vi.fn(),
+          chains: {
+            default: {
+              runtime: { rpcUrl: "http://127.0.0.1:8545" },
+              publicClient: { chain: { id: 31337 } },
+              walletClient: {},
+              testClient: {
+                impersonateAccount,
+                stopImpersonatingAccount,
+                setBalance: vi.fn(),
+              },
+            },
           },
         } as any,
         async () => {
@@ -125,13 +133,17 @@ describe("withImpersonation", () => {
 
     await step(
       {
-        runtime: { rpcUrl: "http://127.0.0.1:8545" },
-        publicClient: { chain: { id: 31337 } },
-        walletClient: {},
-        testClient: {
-          impersonateAccount,
-          stopImpersonatingAccount,
-          setBalance: vi.fn(),
+        chains: {
+          default: {
+            runtime: { rpcUrl: "http://127.0.0.1:8545" },
+            publicClient: { chain: { id: 31337 } },
+            walletClient: {},
+            testClient: {
+              impersonateAccount,
+              stopImpersonatingAccount,
+              setBalance: vi.fn(),
+            },
+          },
         },
       } as any,
       async () => {},

@@ -3,7 +3,7 @@ title: withBundler
 description: Start a local Alto bundler connected to the current Anvil runtime.
 ---
 
-## `withBundler({ entryPoint, mode? })`
+## `withBundler({ entryPoint, mode?[, chain] })`
 
 **Test runners:** Examples use Vitest `test` and `expect`. `scenario(...)` returns an async function you can pass to any runner with a similar `test` callback (for example Jest or Node `node:test`).
 
@@ -18,15 +18,16 @@ import { scenario, withFork, withBundler } from "@st8craft/core";
 const ENTRY_POINT = "0x0576a174D229E3cFA37253523E645A78A0C91B57";
 
 test(
-  "bundler wiring is exposed in scenario context",
+  "bundler wiring is exposed on the chain context",
   scenario(
     withFork({
       rpcUrl: process.env.VITE_RPC_URL!,
       blockNumber: 22_000_000n,
     }),
     withBundler({ entryPoint: ENTRY_POINT, mode: "alto" }),
-    async ({ bundlerClient }) => {
-      expect(await bundlerClient.getSupportedEntryPoints()).toContain(ENTRY_POINT);
+    async ({ chains }) => {
+      const ch = chains!.default;
+      expect(await ch.bundlerClient!.getSupportedEntryPoints()).toContain(ENTRY_POINT);
     },
   ),
 );
@@ -35,16 +36,18 @@ test(
 ### Options
 | Option | Type | Required? | Meaning (units/semantics) | Used for / affects |
 |---|---|---|---|---|
+| `chain` | `string` | No | Key on `ctx.chains` (default `default`). | Selects which forked chain receives bundler fields. |
 | `entryPoint` | `Address` | Yes | ERC-4337 entry point address (typically EntryPoint v0.7 / v0.6). | Configures the bundler instance and how user operations are encoded. |
 | `mode` | `"alto"` | No | Bundler runtime mode. | Selects the local Alto bundler implementation. |
 
 ### Adds to context
+On `ctx.chains[chain]`:
 - `bundlerUrl`
 - `bundlerClient`
 - `entryPoint`
 
 ### Context requirements
-- Requires runtime + `ctx.testClient` from `withFork` / `withExternalRuntime`.
+- Requires fork runtime mode on that chain entry (`withFork`, a `withMultiChain` fork entry, or external runtime with `runtimeMode: "fork"`).
 - Expects the host project to have the peer dependency used by Alto (`@pimlico/alto`). Docs examples are type-checked, not executed here.
 
 ### Lifecycle
@@ -52,4 +55,3 @@ Managed lifecycle, the fixture starts a local bundler for the scenario and stops
 
 ### Notes and caveats
 Additional examples for user operations are planned.
-

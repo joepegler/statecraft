@@ -1,4 +1,4 @@
-import type { ContractArtifact, ScenarioContext } from "./types.js";
+import type { ContractArtifact, ScenarioChainContext, ScenarioContext } from "./types.js";
 import type { Hex } from "viem";
 
 /**
@@ -30,14 +30,20 @@ export function requireContext<
   return ctx as RequireScenarioKeys<Ctx, K>;
 }
 
-export function requireRuntimeClients(ctx: ScenarioContext): asserts ctx is ScenarioContext & {
-  runtime: NonNullable<ScenarioContext["runtime"]>;
-  publicClient: NonNullable<ScenarioContext["publicClient"]>;
-  walletClient: NonNullable<ScenarioContext["walletClient"]>;
-  testClient: NonNullable<ScenarioContext["testClient"]>;
+/**
+ * Asserts `ctx.chains[chainKey]` exists and has runtime + viem clients.
+ */
+export function requireChainScopedRuntimeClients(
+  ctx: ScenarioContext,
+  chainKey: string,
+): asserts ctx is ScenarioContext & {
+  chains: Record<string, ScenarioChainContext> & Record<typeof chainKey, ScenarioChainContext>;
 } {
-  if (!ctx.runtime || !ctx.publicClient || !ctx.walletClient || !ctx.testClient) {
-    throw new Error("Scenario context is missing runtime clients. Compose with withChain(...) or withFork(...) first.");
+  const ch = ctx.chains?.[chainKey];
+  if (!ch?.runtime || !ch.publicClient || !ch.walletClient || !ch.testClient) {
+    throw new Error(
+      `Scenario context is missing runtime clients for chain "${chainKey}". Compose withChain(...), withFork(...), withExternalRuntime(...), or withMultiChain(...) first.`,
+    );
   }
 }
 

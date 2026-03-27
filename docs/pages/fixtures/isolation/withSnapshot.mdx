@@ -3,7 +3,7 @@ title: withSnapshot
 description: Snapshot the runtime before inner steps run, then revert in a finally block.
 ---
 
-## withSnapshot()
+## withSnapshot([{ chain }])
 
 **Test runners:** Examples use Vitest `test` and `expect`. `scenario(...)` returns an async function you can pass to any runner with a similar `test` callback (for example Jest or Node `node:test`).
 
@@ -23,8 +23,9 @@ test(
   scenario(
     withChain(),
     withSnapshot(),
-    async ({ publicClient }) => {
-      expect(await publicClient.getBlockNumber()).toBeGreaterThan(0n);
+    async ({ chains }) => {
+      const ch = chains!.default;
+      expect(await ch.publicClient.getBlockNumber()).toBeGreaterThan(0n);
     },
   ),
 );
@@ -33,13 +34,13 @@ test(
 ### Options
 | Option | Type | Required? | Meaning (units/semantics) | Used for / affects |
 |---|---|---|---|---|
-| `()` | `none` | No | This fixture does not accept any configuration options. | Always uses `ctx.testClient.snapshot()` and reverts in `finally`. |
+| `chain` | `string` | No | Key on `ctx.chains` (default `default`). | Selects which chain entry is snapshotted and reverted. |
 
 ### Adds to context
 None; it forwards the context unchanged.
 
 ### Context requirements
-- Requires runtime clients on context, so it must come after a runtime source fixture like `withChain`, `withFork`, or `withExternalRuntime`.
+- Requires runtime clients on the target chain, so it must come after a runtime source fixture like `withChain`, `withFork`, `withExternalRuntime`, or `withMultiChain`.
 
 ### Example (suite hooks with `describe`)
 
@@ -79,18 +80,19 @@ describe("shared runtime with snapshot isolation", () => {
       withExternalRuntime({ runtime: handle }),
       withSnapshot(),
       withFundedWallet({ balance: parseEther("1") }),
-      async ({ publicClient, walletClient }) => {
-        const before = await publicClient.getBalance({ address: recipient });
+      async ({ chains }) => {
+        const ch = chains!.default;
+        const before = await ch.publicClient.getBalance({ address: recipient });
         expect(before).toBe(0n);
 
         // Send ETH to `recipient` from the scenario wallet.
         // Any chain mutation here is rolled back by `withSnapshot()`.
-        await walletClient.sendTransaction({
+        await ch.walletClient.sendTransaction({
           to: recipient,
           value: txValue,
         });
 
-        const after = await publicClient.getBalance({ address: recipient });
+        const after = await ch.publicClient.getBalance({ address: recipient });
         expect(after).toBe(txValue);
       },
     ),
@@ -101,8 +103,9 @@ describe("shared runtime with snapshot isolation", () => {
     scenario(
       withExternalRuntime({ runtime: handle }),
       withSnapshot(),
-      async ({ publicClient }) => {
-        const balance = await publicClient.getBalance({ address: recipient });
+      async ({ chains }) => {
+        const ch = chains!.default;
+        const balance = await ch.publicClient.getBalance({ address: recipient });
         expect(balance).toBe(0n);
       },
     ),
@@ -116,4 +119,3 @@ Managed lifecycle, it snapshots before `next` and reverts afterward via a `final
 ### Notes and caveats
 - Nesting multiple `withSnapshot()` layers creates nested snapshot scopes.
 - When reusing one `runtime` handle via `withExternalRuntime()`, avoid concurrent tests that mutate chain state, since `withSnapshot()` relies on snapshot and revert ordering.
-

@@ -21,9 +21,10 @@ test(
   scenario(
     withChain(),
     withFundedWallet({ balance: parseEther("1") }),
-    async ({ publicClient, walletClient }) => {
+    async ({ chains }) => {
+      const ch = chains!.default;
       expect(
-        await publicClient.getBalance({ address: walletClient.account!.address }),
+        await ch.publicClient.getBalance({ address: ch.wallet! }),
       ).toBe(
         parseEther("1"),
       );
@@ -35,10 +36,12 @@ test(
 ### Options
 | Option | Type | Required? | Meaning (units/semantics) | Used for / affects |
 |---|---|---|---|---|
+| `chainKey` | `string` | No | Key on `ctx.chains` for this runtime (default `default`). | Namespaces clients when composing multiple chains. |
 | `chainId` | `number` | No | Anvil `--chain-id` override. | Client chain identity (affects viem `chain.id`) and runtime chain id. |
 | `key` | `string` | No | Stable correlation id forwarded to the runtime layer. | Correlates runtime config across restarts (advanced). |
 
 ### Adds to context
+Under `ctx.chains[chainKey]` (default key `default`):
 - `runtime`
 - `runtimeMode` (`"chain"`)
 - `chain`

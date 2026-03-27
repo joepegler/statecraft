@@ -1,7 +1,7 @@
 import type { Address } from "viem";
 import type { ScenarioContext, ScenarioFundedWalletContext, ScenarioRuntimeClientsContext, ScenarioStep } from "../types.js";
 import { dealErc20Balance } from "../internal/dealErc20Balance.js";
-import { requireRuntimeClients } from "../utils.js";
+import { requireChainScopedRuntimeClients } from "../utils.js";
 
 /**
  * Options for {@link withErc20Balance}: seeds an ERC-20 balance in local/forked test state.
@@ -10,12 +10,14 @@ import { requireRuntimeClients } from "../utils.js";
  * tokens on-chain in production and must not be used outside compatible local test runtimes.
  */
 export type WithErc20BalanceConfig = {
+  /** Key on `ctx.chains` (default `default`). */
+  chain?: string;
   /** ERC-20 token contract address. */
   token: Address;
   /** Balance to set (token raw units, e.g. from `parseUnits`). */
   amount: bigint;
   /**
-   * Recipient address. When omitted, uses `ctx.wallet` from {@link withFundedWallet} (or any step that sets it).
+   * Recipient address. When omitted, uses `ctx.chains[chain].wallet` from {@link withFundedWallet} (or any step that sets it).
    */
   to?: Address;
 };
@@ -28,24 +30,26 @@ export type WithErc20Balance = {
 /**
  * Middleware: sets an ERC-20 balance for a recipient on Anvil-compatible runtimes.
  *
- * Requires a prior {@link withChain} or {@link withFork} (for `testClient`). If `to` is omitted,
- * requires {@link withFundedWallet} or another step that sets `ctx.wallet`.
+ * Requires a prior runtime fixture for `chain`. If `to` is omitted,
+ * requires {@link withFundedWallet} or another step that sets `ctx.chains[chain].wallet`.
  *
  * May fail for non-standard tokens (e.g. rebasing or unusual storage layouts); it is not a generic mint path.
  */
 export const withErc20Balance: WithErc20Balance = ((config: WithErc20BalanceConfig) => {
+  const chainKey = config.chain ?? "default";
   return async (ctx, next) => {
-    requireRuntimeClients(ctx);
+    requireChainScopedRuntimeClients(ctx, chainKey);
+    const ch = ctx.chains[chainKey]!;
 
-    const recipient = config.to ?? ctx.wallet;
+    const recipient = config.to ?? ch.wallet;
     if (!recipient) {
       throw new Error(
-        "withErc20Balance(...) requires a recipient: pass `to`, or compose withFundedWallet(...) so ctx.wallet is set.",
+        `withErc20Balance(...) requires a recipient: pass \`to\`, or compose withFundedWallet(...) so ctx.chains["${chainKey}"].wallet is set.`,
       );
     }
 
     await dealErc20Balance({
-      testClient: ctx.testClient,
+      testClient: ch.testClient,
       token: config.token,
       recipient,
       amount: config.amount,
@@ -55,7 +59,16 @@ export const withErc20Balance: WithErc20Balance = ((config: WithErc20BalanceConf
     if (config.to !== undefined) {
       await forward({ ...ctx });
     } else {
-      await forward({ ...ctx, wallet: recipient });
+      await forward({
+        ...ctx,
+        chains: {
+          ...ctx.chains,
+          [chainKey]: {
+            ...ch,
+            wallet: recipient,
+          },
+        },
+      });
     }
   };
 }) as WithErc20Balance;

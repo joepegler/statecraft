@@ -80,9 +80,10 @@ test(
   scenario(
     withChain(),
     withFundedWallet({ balance: parseEther("1") }),
-    async ({ publicClient, walletClient }) => {
-      const balance = await publicClient.getBalance({
-        address: walletClient.account!.address,
+    async ({ chains }) => {
+      const ch = chains!.default;
+      const balance = await ch.publicClient.getBalance({
+        address: ch.wallet!,
       });
 
       expect(balance).toBe(parseEther("1"));
@@ -101,7 +102,7 @@ bunx vitest run tests/quickstart.test.ts
 
 ## What happened (and what success looks like)
 
-This test starts a fresh local Anvil chain, funds a scenario wallet with `withFundedWallet`, reads the wallet balance with `publicClient.getBalance`, and asserts it.
+This test starts a fresh local Anvil chain, funds a scenario wallet with `withFundedWallet` on `ctx.chains.default`, reads the wallet balance with `chains.default.publicClient.getBalance`, and asserts it.
 
 Success looks like a passing Vitest run for `funded wallet on local chain`.
 

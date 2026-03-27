@@ -66,9 +66,10 @@ import { HomePage, Button } from "vocs/components";
           token: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48", // USDC
           amount: parseUnits("1_000_000", 6),
         }),
-        async ({ publicClient, walletClient }) => {
-          // walletClient now has both 1 ETH and seeded USDC
-          const balance = await publicClient.getBalance({ address: walletClient.account.address });
+        async ({ chains }) => {
+          const ch = chains!.default;
+          // ch.walletClient now has both 1 ETH and seeded USDC
+          const balance = await ch.publicClient.getBalance({ address: ch.wallet! });
           expect(balance).toBe(parseEther("1"));
         },
       ),

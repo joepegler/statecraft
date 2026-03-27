@@ -68,7 +68,6 @@ withNextBlockTimestamp: 3
 advanceTime: 3
 ## Multi-chain
 withMultiChain: 4
-chain: 4
 ## Cross-chain (low priority)
 withCrossChainMessage: 2
 withBridgeMock: 2

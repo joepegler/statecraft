@@ -1,23 +1,28 @@
 ---
 title: Runtime Source Fixtures
-description: Start or attach an Anvil runtime and wire viem clients with withChain, withFork, and withExternalRuntime.
+description: Start or attach Anvil runtimes and wire viem clients under ctx.chains with withChain, withFork, withExternalRuntime, or withMultiChain.
 ---
 
 # Runtime Source Fixtures
 
 **Test runners:** Examples in this section use Vitest. `scenario(...)` returns an async function compatible with other `test(...)`-style runners (for example Jest or Node `node:test`).
 
-Statecraft scenarios require a runtime and viem clients. These fixtures provide the base runtime context and are generally mutually exclusive in normal scenarios.
+Statecraft scenarios require at least one runtime and viem clients. Runtime fixtures place chain state under **`ctx.chains.<key>`** (the default key is **`default`** when you use `withChain`, `withFork`, or `withExternalRuntime` without `chainKey`).
 
-Use exactly one of `withChain`, `withFork`, or `withExternalRuntime` as your base runtime step. Everything else (wallet funding, ERC-20 seeding, contracts, and isolation) assumes this base step exists.
+## Choosing a base runtime strategy
+
+- **Single chain:** use exactly one of `withChain`, `withFork`, or `withExternalRuntime` as your first runtime step (or combine multiple single-chain steps with different `chainKey` values).
+- **Multiple chains in one step:** use [`withMultiChain`](/fixtures/runtime/withMultiChain) with a map of named chain specs.
+
+Downstream fixtures (wallets, ERC-20 seeding, contracts, isolation, bundler) target a chain with an optional `chain` argument (default `default`).
 
 ## Fixtures
 
-- [`withChain()`](/fixtures/runtime/withChain)
-- [`withFork({ rpcUrl, blockNumber })`](/fixtures/runtime/withFork)
-- [`withExternalRuntime({ runtime, runtimeMode?, clients? })`](/fixtures/runtime/withExternalRuntime)
+- [`withChain([config])`](/fixtures/runtime/withChain)
+- [`withFork({ rpcUrl, blockNumber, ... })`](/fixtures/runtime/withFork)
+- [`withExternalRuntime({ runtime, ... })`](/fixtures/runtime/withExternalRuntime)
+- [`withMultiChain({ ... })`](/fixtures/runtime/withMultiChain)
 
 ## Additional wiring
-- [`withBundler({ entryPoint, mode? })`](/fixtures/runtime/withBundler)
-- `withBundler` requires fork runtime mode (`withFork(...)`, or external runtime declared with `runtimeMode: "fork"`).
-
+- [`withBundler({ chain?, entryPoint, mode? })`](/fixtures/runtime/withBundler)
+- `withBundler` requires fork runtime mode on that chain (`withFork(...)`, a `withMultiChain` fork entry, or external runtime with `runtimeMode: "fork"`).

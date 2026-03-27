@@ -10,13 +10,14 @@ export { withErc20Balance } from "./fixtures/withErc20Balance.js";
 export { withContracts } from "./fixtures/withContracts.js";
 export { withDeployments } from "./fixtures/withDeployments.js";
 export { withBundler } from "./fixtures/withBundler.js";
+export { withMultiChain } from "./fixtures/withMultiChain.js";
 
 export type {
   AfterDeployContext,
   AfterSetCodeContext,
   ContractArtifact,
-  BundlerContext,
   ScenarioBundlerContext,
+  ScenarioChainContext,
   DeploymentArgsResolver,
   DeploymentRecord,
   EmptyScenarioContext,
@@ -43,3 +44,5 @@ export type {
   DeploymentSpec,
 } from "./fixtures/withDeployments.js";
 export type { WithBundlerConfig } from "./fixtures/withBundler.js";
+export type { WithMultiChainConfig, WithMultiChainEntry } from "./fixtures/withMultiChain.js";
+export type { WithSnapshotConfig } from "./fixtures/withSnapshot.js";

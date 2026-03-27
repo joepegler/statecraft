@@ -3,7 +3,7 @@ title: withImpersonation
 description: Impersonate an existing account for scenario signing, with optional ETH top-up and automatic teardown.
 ---
 
-## `withImpersonation({ address[, balance, stopOnExit] })`
+## `withImpersonation({ address[, chain, balance, stopOnExit] })`
 
 **Test runners:** Examples use Vitest `test` and `expect`. `scenario(...)` returns an async function you can pass to any runner with a similar `test` callback (for example Jest or Node `node:test`).
 
@@ -31,9 +31,10 @@ test(
       address: "0x000000000000000000000000000000000000dead",
       balance: parseEther("1"),
     }),
-    async ({ wallet, walletClient, publicClient }) => {
-      expect(walletClient.account!.address).toBe(wallet);
-      const eth = await publicClient.getBalance({ address: wallet });
+    async ({ chains }) => {
+      const ch = chains!.default;
+      expect(ch.walletClient.account!.address).toBe(ch.wallet);
+      const eth = await ch.publicClient.getBalance({ address: ch.wallet! });
       expect(eth).toBe(parseEther("1"));
     },
   ),
@@ -43,16 +44,18 @@ test(
 ### Options
 | Option | Type | Required? | Meaning (units/semantics) | Used for / affects |
 |---|---|---|---|---|
-| `address` | `Address` | Yes | Existing account to impersonate. | Calls Anvil impersonation and becomes `walletClient.account` + `ctx.wallet`. |
+| `chain` | `string` | No | Key on `ctx.chains` (default `default`). | Selects which chain receives impersonation. |
+| `address` | `Address` | Yes | Existing account to impersonate. | Calls Anvil impersonation and becomes `walletClient.account` + `ctx.chains[chain].wallet`. |
 | `balance` | `bigint` | No | ETH balance to set in wei before test body runs. | Calls `testClient.setBalance` for `address`. |
 | `stopOnExit` | `boolean` | No | Whether to stop impersonation in fixture teardown. Defaults to `true`. | Controls `stopImpersonatingAccount` in `finally`. |
 
 ### Adds to context
+On `ctx.chains[chain]`:
 - `wallet`
 - `walletClient`
 
 ### Context requirements
-Requires runtime + clients from `withChain`, `withFork`, or `withExternalRuntime` so `ctx.testClient` exists.
+Requires runtime + clients on the target chain from `withChain`, `withFork`, `withExternalRuntime`, or `withMultiChain` so `ctx.chains[chain].testClient` exists.
 
 ### Lifecycle
 This fixture does not start or stop Anvil. It manages impersonation lifecycle for the configured address and, by default, stops impersonation when downstream steps finish.

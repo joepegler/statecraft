@@ -7,7 +7,7 @@ import type {
   ScenarioRuntimeClientsContext,
   ScenarioStep,
 } from "../types.js";
-import { extractBytecode, requireRuntimeClients } from "../utils.js";
+import { extractBytecode, requireChainScopedRuntimeClients } from "../utils.js";
 
 /**
  * Declares one contract to deploy via `walletClient.deployContract` in declaration order.
@@ -22,53 +22,58 @@ export type DeploymentSpec = {
 };
 
 /**
- * Map of deployment name → spec; names become keys on `ctx.deployments`.
+ * Deployments for {@link withDeployments}. Use `chain` to select `ctx.chains[chain]` (default `default`).
  */
-export type WithDeploymentsConfig = Record<string, DeploymentSpec>;
+export type WithDeploymentsConfig = {
+  chain?: string;
+  deployments: Record<string, DeploymentSpec>;
+};
 
 type DeploymentsMap = Record<string, DeploymentRecord>;
 
 /**
- * Middleware: deploys each spec in key order, then merges `DeploymentRecord`s into `ctx.deployments`.
- * Requires a prior `withChain` / `withFork` and a wallet account on `walletClient`.
+ * Middleware: deploys each spec in key order on `ctx.chains[chain]`, then merges `DeploymentRecord`s into that chain entry.
+ * Requires a prior runtime fixture and a wallet account on `walletClient` for that chain.
  */
 export function withDeployments<C extends ScenarioRuntimeClientsContext>(
   config: WithDeploymentsConfig,
 ): ScenarioStep<
-  C & { deployments?: DeploymentsMap },
-  C & { deployments: DeploymentsMap }
+  C & { chains: C["chains"] },
+  C & { chains: C["chains"] }
 > {
+  const chainKey = config.chain ?? "default";
   return async (ctx, next) => {
-    requireRuntimeClients(ctx);
-    const deployments: DeploymentsMap = { ...(ctx.deployments ?? {}) };
+    requireChainScopedRuntimeClients(ctx, chainKey);
+    const ch = ctx.chains[chainKey]!;
+    const deployments: DeploymentsMap = { ...(ch.deployments ?? {}) };
 
-    for (const [name, spec] of Object.entries(config)) {
+    for (const [name, spec] of Object.entries(config.deployments)) {
       if (!spec.artifact.abi) {
         throw new Error(`${name}.artifact.abi is required for deployment.`);
       }
 
       const bytecode = extractBytecode(spec.artifact.bytecode, `${name}.bytecode`);
       const args = typeof spec.args === "function" ? await spec.args({ deployments }) : spec.args ?? [];
-      const account = ctx.walletClient.account;
+      const account = ch.walletClient.account;
       if (!account) {
         throw new Error("withDeployments(...) requires a walletClient account.");
       }
 
-      const hash = await ctx.walletClient.deployContract({
+      const hash = await ch.walletClient.deployContract({
         abi: spec.artifact.abi as never,
         bytecode,
         args: args as readonly unknown[],
         account,
       });
 
-      const receipt = await ctx.publicClient.waitForTransactionReceipt({ hash });
+      const receipt = await ch.publicClient.waitForTransactionReceipt({ hash });
       const deployment: DeploymentRecord = {
         address: receipt.contractAddress!,
         receipt,
         contract: getContract({
           address: receipt.contractAddress!,
           abi: spec.artifact.abi as never,
-          client: { public: ctx.publicClient, wallet: ctx.walletClient },
+          client: { public: ch.publicClient, wallet: ch.walletClient },
         }),
       };
 
@@ -76,17 +81,24 @@ export function withDeployments<C extends ScenarioRuntimeClientsContext>(
 
       if (spec.afterDeploy) {
         await spec.afterDeploy({
+          chain: chainKey,
           name,
           deployment,
           deployments,
-          wallet: ctx.wallet,
+          wallet: ch.wallet,
         });
       }
     }
 
     await next({
       ...ctx,
-      deployments,
+      chains: {
+        ...ctx.chains,
+        [chainKey]: {
+          ...ch,
+          deployments,
+        },
+      },
     });
   };
 }

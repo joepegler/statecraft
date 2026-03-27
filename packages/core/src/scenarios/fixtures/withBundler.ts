@@ -1,12 +1,14 @@
 import { privateKeyToAccount, type PrivateKeyAccount } from "viem/accounts";
 import type { Address } from "viem";
-import { requireRuntimeClients } from "../utils.js";
+import { requireChainScopedRuntimeClients } from "../utils.js";
 import type { BundlerClient } from "../../clients/index.js";
 import { createBundlerClient } from "../../clients/index.js";
 import type { ScenarioBundlerContext, ScenarioRuntimeClientsContext, ScenarioStep } from "../types.js";
 import { startBundler } from "../internal/startBundler.js";
 
 export type WithBundlerConfig = {
+  /** Key on `ctx.chains` (default `default`). */
+  chain?: string;
   /** ERC-4337 entry point address (typically EntryPoint v0.7 / v0.6). */
   entryPoint: Address;
   /** Bundler runtime mode. Currently only `alto` is supported. */
@@ -17,16 +19,19 @@ const DEFAULT_EXECUTOR_PRIVATE_KEY =
   "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
 
 /**
- * Middleware: starts a local Alto bundler connected to the current Anvil runtime, then wires
- * a typed viem-compatible JSON-RPC client into scenario context.
+ * Middleware: starts a local Alto bundler connected to the Anvil runtime for `ctx.chains[chain]`, then wires
+ * a typed viem-compatible JSON-RPC client into that chain entry.
  *
  * Requires `@pimlico/alto` to be installed in the host project (declared as a peer dependency).
  */
 export function withBundler(config: WithBundlerConfig): ScenarioStep<ScenarioRuntimeClientsContext, ScenarioBundlerContext> {
+  const chainKey = config.chain ?? "default";
   return async (ctx, next) => {
-    requireRuntimeClients(ctx);
-    if (ctx.runtimeMode !== "fork") {
-      throw new Error("withBundler(...) requires withFork(...) to run first.");
+    requireChainScopedRuntimeClients(ctx, chainKey);
+    const ch = ctx.chains[chainKey]!;
+
+    if (ch.runtimeMode !== "fork") {
+      throw new Error("withBundler(...) requires withFork(...) (or a fork entry in withMultiChain) for that chain first.");
     }
 
     if (!config?.entryPoint) {
@@ -37,36 +42,39 @@ export function withBundler(config: WithBundlerConfig): ScenarioStep<ScenarioRun
       throw new Error(`withBundler(...) only supports mode='alto'.`);
     }
 
-    // Alto needs executor funds to submit bundle transactions; anvil dev keys are typically funded,
-    // but we set balances explicitly to keep tests deterministic.
     const executorAccount: PrivateKeyAccount = privateKeyToAccount(DEFAULT_EXECUTOR_PRIVATE_KEY);
     const fundingBalance = 100n * 10n ** 18n;
-    await ctx.testClient.setBalance({
+    await ch.testClient.setBalance({
       address: executorAccount.address,
       value: fundingBalance,
     });
 
     const bundler = await startBundler({
-      rpcUrl: ctx.runtime.rpcUrl,
+      rpcUrl: ch.runtime.rpcUrl,
       entryPoint: config.entryPoint,
     });
 
     const bundlerClient: BundlerClient = createBundlerClient({
       bundlerUrl: bundler.bundlerUrl,
-      chain: ctx.chain,
+      chain: ch.chain,
       entryPoint: config.entryPoint,
     });
 
     try {
       await next({
         ...ctx,
-        bundlerUrl: bundler.bundlerUrl,
-        bundlerClient,
-        entryPoint: config.entryPoint,
+        chains: {
+          ...ctx.chains,
+          [chainKey]: {
+            ...ch,
+            bundlerUrl: bundler.bundlerUrl,
+            bundlerClient,
+            entryPoint: config.entryPoint,
+          },
+        },
       });
     } finally {
       await bundler.stop();
     }
   };
 }
-

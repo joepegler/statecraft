@@ -1,9 +1,13 @@
 import { startRuntime, stopRuntime } from "../../runtime/index.js";
 import { createClients } from "../../clients/index.js";
-import type { EmptyScenarioContext, ScenarioRuntimeClientsContext, ScenarioStep } from "../types.js";
+import type { ScenarioContext, ScenarioRuntimeClientsContext, ScenarioStep } from "../types.js";
 
 /** Options for an anvil instance forked from a remote JSON-RPC endpoint at a pinned block. */
 export type WithForkConfig = {
+  /**
+   * Key on `ctx.chains` for this runtime (default `default`).
+   */
+  chainKey?: string;
   /** HTTP(S) RPC URL of the chain to fork (passed to anvil `--fork-url`). */
   rpcUrl: string;
   /**
@@ -17,9 +21,10 @@ export type WithForkConfig = {
 };
 
 /**
- * Middleware: starts a forked anvil, wires viem clients, runs `next`, then stops the runtime.
+ * Middleware: starts a forked anvil, wires viem clients under `ctx.chains[chainKey]`, runs `next`, then stops the runtime.
  */
-export function withFork(config: WithForkConfig): ScenarioStep<EmptyScenarioContext, ScenarioRuntimeClientsContext> {
+export function withFork(config: WithForkConfig): ScenarioStep<ScenarioContext, ScenarioRuntimeClientsContext> {
+  const chainKey = config.chainKey ?? "default";
   return async (ctx, next) => {
     if (!config.rpcUrl) {
       throw new Error("withFork(...) requires rpcUrl.");
@@ -41,12 +46,17 @@ export function withFork(config: WithForkConfig): ScenarioStep<EmptyScenarioCont
     try {
       await next({
         ...ctx,
-        runtime,
-        runtimeMode: "fork",
-        chain: clients.publicClient.chain,
-        publicClient: clients.publicClient,
-        walletClient: clients.walletClient,
-        testClient: clients.testClient,
+        chains: {
+          ...(ctx.chains ?? {}),
+          [chainKey]: {
+            runtime,
+            runtimeMode: "fork",
+            chain: clients.publicClient.chain,
+            publicClient: clients.publicClient,
+            walletClient: clients.walletClient,
+            testClient: clients.testClient,
+          },
+        },
       });
     } finally {
       await stopRuntime(runtime);

@@ -11,10 +11,14 @@ describe("withErc20Balance", () => {
     });
 
     const ctx = {
-      runtime: { rpcUrl: "http://127.0.0.1:8545" },
-      publicClient: {},
-      walletClient: {},
-      testClient: { mode: "anvil" },
+      chains: {
+        default: {
+          runtime: { rpcUrl: "http://127.0.0.1:8545" },
+          publicClient: {},
+          walletClient: {},
+          testClient: { mode: "anvil" },
+        },
+      },
     } as any;
 
     await expect(
