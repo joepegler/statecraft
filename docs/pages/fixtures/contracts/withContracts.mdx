@@ -11,9 +11,11 @@ description: Inject runtime bytecode at fixed addresses (test-only) with optiona
 Use `withContracts()` when you want fast, deterministic contract setup at known addresses, without running constructors or worrying about deployment ordering.
 
 ### Example
+:::code-group
 ```ts twoslash [index.ts]
 import { test, expect } from "vitest";
 import { scenario, withChain, withContracts } from "@st8craft/core";
+import { answerArtifact } from "./config.js";
 
 const ANSWER_ADDRESS = "0x1000000000000000000000000000000000000001";
 
@@ -23,10 +25,7 @@ test(
     withChain(),
     withContracts({
       answer: {
-        artifact: {
-          // Twoslash only type-checks this example; runtime execution is not required here.
-          deployedBytecode: "0x00",
-        },
+        artifact: answerArtifact,
         address: ANSWER_ADDRESS,
       },
     }),
@@ -36,6 +35,24 @@ test(
   ),
 );
 ```
+
+```js twoslash [config.js] filename="config.js"
+export const answerArtifact = {
+  abi: [
+    {
+      type: "function",
+      name: "answer",
+      stateMutability: "view",
+      inputs: [],
+      outputs: [{ type: "uint256" }],
+    },
+  ],
+  bytecode: "0x600a600c600039600a6000f3",
+  // Twoslash only type-checks this example; runtime execution is not required here.
+  deployedBytecode: "0x00",
+};
+```
+:::
 
 ### Options
 | Option | Type | Required? | Meaning (units/semantics) | Used for / affects |

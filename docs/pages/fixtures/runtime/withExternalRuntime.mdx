@@ -27,18 +27,21 @@ import {
   type RuntimeHandle,
 } from "@st8craft/core";
 
-let handle!: RuntimeHandle;
-let sharedBlock!: bigint;
 
-beforeAll(async () => {
-  handle = await startRuntime({ mode: "chain" });
-});
-
-afterAll(async () => {
-  await stopRuntime(handle);
-});
 
 describe.sequential("external runtime lifecycle owned by the test file", () => {
+
+  let handle!: RuntimeHandle;
+  let sharedBlock!: bigint;
+
+  beforeAll(async () => {
+    handle = await startRuntime({ mode: "chain" });
+  });
+
+  afterAll(async () => {
+    await stopRuntime(handle);
+  });
+
   test(
     "builds shared state for later tests",
     scenario(
