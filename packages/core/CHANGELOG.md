@@ -1,5 +1,12 @@
 # @st8craft/core
 
+## 0.3.8
+
+### Patch Changes
+
+- 574d17a: Docs cpopy improvements
+- c94a015: withImpersonation
+
 ## 0.3.7
 
 ### Patch Changes
