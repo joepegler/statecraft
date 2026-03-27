@@ -25,8 +25,8 @@ test(
       blockNumber: 22_000_000n,
     }),
     withBundler({ entryPoint: ENTRY_POINT, mode: "alto" }),
-    async ({ entryPoint }) => {
-      expect(entryPoint).toBe(ENTRY_POINT);
+    async ({ bundlerClient }) => {
+      expect(await bundlerClient.getSupportedEntryPoints()).toContain(ENTRY_POINT);
     },
   ),
 );
@@ -44,8 +44,7 @@ test(
 - `entryPoint`
 
 ### Context requirements
-- Requires fork runtime context. Use `withFork(...)` first, or `withExternalRuntime({ runtime, runtimeMode: "fork" })`.
-- Requires runtime clients (`ctx.testClient`, `ctx.chain`) from a runtime source fixture.
+- Requires runtime + `ctx.testClient` from `withFork` / `withExternalRuntime`.
 - Expects the host project to have the peer dependency used by Alto (`@pimlico/alto`). Docs examples are type-checked, not executed here.
 
 ### Lifecycle
