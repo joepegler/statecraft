@@ -64,47 +64,27 @@ export type DeploymentArgsResolver = (ctx: {
 export type EmptyScenarioContext = {};
 
 /**
- * Context after {@link withChain} or {@link withFork}: runtime handle and viem clients are always set.
+ * Per-chain EVM context: one Anvil runtime, viem clients, and chain-scoped state (wallet, contracts, bundler).
  */
-export type ScenarioRuntimeClientsContext = ScenarioContext & {
-  runtime: NonNullable<ScenarioContext["runtime"]>;
-  runtimeMode: NonNullable<ScenarioContext["runtimeMode"]>;
-  chain: NonNullable<ScenarioContext["chain"]>;
-  publicClient: NonNullable<ScenarioContext["publicClient"]>;
-  walletClient: NonNullable<ScenarioContext["walletClient"]>;
-  testClient: NonNullable<ScenarioContext["testClient"]>;
-};
-
-/**
- * Context after {@link withFundedWallet}: funded account address is always set (in addition to runtime clients).
- */
-export type ScenarioFundedWalletContext = ScenarioRuntimeClientsContext & {
-  wallet: Hex;
-};
-
-/**
- * Accumulated context passed through `withX` middleware. Fields are added by fixtures (e.g. {@link withChain}).
- */
-export type ScenarioContext = {
-  /** Live anvil handle; set by `withChain` or `withFork`. */
-  runtime?: RuntimeHandle;
-  /** Runtime mode (`chain` or `fork`); set by runtime fixtures. */
-  runtimeMode?: RuntimeMode;
-  /** Chain identity used by all viem clients in this scenario runtime. */
-  chain?: Chain;
-  /** Viem public client; set with runtime fixtures. */
-  publicClient?: PublicClient<Transport, Chain>;
-  /** Viem wallet client; may be replaced by {@link withFundedWallet}. */
-  walletClient?: WalletClient<Transport, Chain, Account | undefined>;
+export type ScenarioChainContext = {
+  /** Live anvil handle for this chain entry. */
+  runtime: RuntimeHandle;
+  /** Runtime mode (`chain` or `fork`). */
+  runtimeMode: RuntimeMode;
+  /** Chain identity used by viem clients for this entry. */
+  chain: Chain;
+  publicClient: PublicClient<Transport, Chain>;
+  /** Viem wallet client; may be replaced by {@link withFundedWallet} or {@link withImpersonation}. */
+  walletClient: WalletClient<Transport, Chain, Account | undefined>;
   /** Viem anvil test client (snapshots, `setCode`, etc.). */
-  testClient?: TestClient<"anvil", Transport, Chain>;
-  /** Address of the funded test wallet when `withFundedWallet` ran. */
+  testClient: TestClient<"anvil", Transport, Chain>;
+  /** Address of the funded or impersonated wallet when a wallet fixture ran on this chain. */
   wallet?: Hex;
-  /** Named contract handles from `withContracts` and merged across steps. */
+  /** Named contract handles from `withContracts` on this chain. */
   contracts?: ScenarioContracts;
-  /** Named deployment records from `withDeployments` and merged across steps. */
+  /** Named deployment records from `withDeployments` on this chain. */
   deployments?: Record<string, DeploymentRecord>;
-  /** HTTP RPC endpoint for a local ERC-4337 bundler. Set by {@link withBundler}. */
+  /** HTTP RPC endpoint for a local ERC-4337 bundler. Set by {@link withBundler} on this chain. */
   bundlerUrl?: string;
   /** Viem-compatible bundler client for RPC methods like `eth_sendUserOperation`. Set by {@link withBundler}. */
   bundlerClient?: BundlerClient;
@@ -113,42 +93,54 @@ export type ScenarioContext = {
 };
 
 /**
- * Bundler-only context fields added by {@link withBundler}.
+ * Accumulated context passed through `withX` middleware. Runtime state lives under {@link ScenarioChainContext}
+ * keyed by chain name (for example `ctx.chains.ethereum`).
  */
-export type BundlerContext = {
-  /** HTTP RPC endpoint for the local bundler. */
-  bundlerUrl: string;
-  /** Viem-compatible bundler client for JSON-RPC methods like `eth_sendUserOperation`. */
-  bundlerClient: BundlerClient;
-  /** ERC-4337 entry point address configured for this bundler instance. */
-  entryPoint: Address;
+export type ScenarioContext = {
+  chains?: Record<string, ScenarioChainContext>;
 };
 
 /**
- * Scenario context after {@link withBundler}: runtime clients plus bundler RPC and a typed client.
+ * Context after a runtime fixture (`withChain`, `withFork`, `withExternalRuntime`, or `withMultiChain`): at least one chain entry exists with clients.
  */
-export type ScenarioBundlerContext = ScenarioContext & BundlerContext;
+export type ScenarioRuntimeClientsContext = ScenarioContext & {
+  chains: Record<string, ScenarioChainContext>;
+};
+
+/**
+ * Context after {@link withFundedWallet}: the targeted chain entry includes `wallet`. Prefer reading `ctx.chains[chain].wallet`.
+ */
+export type ScenarioFundedWalletContext = ScenarioRuntimeClientsContext;
+
+/**
+ * Context after {@link withBundler}: the targeted chain entry includes bundler fields.
+ */
+export type ScenarioBundlerContext = ScenarioRuntimeClientsContext;
 
 /** Context passed to `ContractInjection.afterSetCode` from `withContracts`. */
 export type AfterSetCodeContext = {
+  /** Chain key this injection ran on. */
+  chain: string;
   /** Contract key from the `withContracts` config map. */
   name: string;
   /** Address where runtime bytecode was installed. */
   address: Hex;
-  testClient: NonNullable<ScenarioContext["testClient"]>;
-  publicClient: NonNullable<ScenarioContext["publicClient"]>;
-  walletClient: NonNullable<ScenarioContext["walletClient"]>;
+  testClient: NonNullable<ScenarioChainContext["testClient"]>;
+  publicClient: NonNullable<ScenarioChainContext["publicClient"]>;
+  walletClient: NonNullable<ScenarioChainContext["walletClient"]>;
 };
 
 /** Context passed to `DeploymentSpec.afterDeploy` from `withDeployments`. */
 export type AfterDeployContext = {
+  /** Chain key this deployment ran on. */
+  chain: string;
   /** Deployment key from the `withDeployments` config map. */
   name: string;
   /** Record for the deployment just completed. */
   deployment: DeploymentRecord;
-  /** All deployments so far, including this one. */
+  /** All deployments so far on this chain, including this one. */
   deployments: Record<string, DeploymentRecord>;
-  /** Funded wallet address when `withFundedWallet` ran before this step; otherwise `undefined`. */
+  /** Funded wallet address when `withFundedWallet` ran before this step on this chain; otherwise `undefined`. */
   wallet: Hex | undefined;
 };
 

@@ -1,9 +1,9 @@
 ---
 title: withDeployments
-description: Deploy contracts using constructor semantics, and merge deployment results into ctx.deployments.
+description: Deploy contracts using constructor semantics, and merge deployment results into ctx.chains[chain].deployments.
 ---
 
-## `withDeployments({ ... })`
+## `withDeployments({ deployments, chain? })`
 
 **Test runners:** Examples use Vitest `test` and `expect`. `scenario(...)` returns an async function you can pass to any runner with a similar `test` callback (for example Jest or Node `node:test`).
 
@@ -19,18 +19,20 @@ import { isAddress } from "viem";
 import { answerArtifact } from "./config.js";
 
 test(
-  "deployment record is present in ctx.deployments",
+  "deployment record is present on the chain context",
   scenario(
     withChain(),
     withFundedWallet({ balance: 1n }),
     withDeployments({
-      answer: {
-        artifact: answerArtifact,
-        args: [],
+      deployments: {
+        answer: {
+          artifact: answerArtifact,
+          args: [],
+        },
       },
     }),
-    async ({ deployments }) => {
-      expect(isAddress(deployments?.answer?.address)).toBe(true);
+    async ({ chains }) => {
+      expect(isAddress(chains?.default.deployments?.answer?.address)).toBe(true);
     },
   ),
 );
@@ -56,22 +58,23 @@ export const answerArtifact = {
 ### Options
 | Option | Type | Required? | Meaning (units/semantics) | Used for / affects |
 |---|---|---|---|---|
-| `name` (record key) | `string` | Yes | Deployment name you choose as the key in your config object. | Becomes `ctx.deployments[name]`. |
+| `chain` | `string` | No | Key on `ctx.chains` (default `default`). | Selects which chain receives deployments. |
+| `deployments` | `Record<string, DeploymentSpec>` | Yes | Named deployment specs. | Keys become `ctx.chains[chain].deployments[name]`. |
+| `name` (record key) | `string` | Yes | Deployment name you choose as the key under `deployments`. | Becomes the deployment record key. |
 | `artifact` | `ContractArtifact` | Yes | Contract artifact including required `abi` plus creation `bytecode`. | Drives `walletClient.deployContract`, and (when ABI is present) produces a typed contract handle. |
 | `args` | `readonly unknown[] | DeploymentArgsResolver` | No | Constructor arguments, or a resolver `(ctx) => args` that can depend on earlier deployments. | Controls constructor calldata for that deployment. |
 | `afterDeploy` | `(ctx) => Promise` | No | Optional async hook called after the receipt is mined and merged into `deployments`. | Allows extra node-only setup after deployment. |
 
 ### Adds to context
-- `deployments` (map of deployment name → deployment record)
+- `ctx.chains[chain].deployments` (map of deployment name to deployment record)
 
 ### Context requirements
-- Requires runtime + clients from `withChain`, `withFork`, or `withExternalRuntime` (for `ctx.publicClient` and `ctx.testClient`).
-- Requires a funded wallet on `ctx.walletClient` (typically provided by `withFundedWallet`) so `walletClient.deployContract` can send the transaction.
+- Requires runtime + clients on the target chain from `withChain`, `withFork`, `withExternalRuntime`, or `withMultiChain` (for `ctx.chains[chain].publicClient` and `ctx.chains[chain].testClient`).
+- Requires a funded wallet on `ctx.chains[chain].walletClient` (typically provided by `withFundedWallet`) so `walletClient.deployContract` can send the transaction.
 
 ### Lifecycle
 Managed middleware that deploys contracts in key order, then forwards to `next`.
 
 ### Notes and caveats
-- Deployment ordering is the key order in your config object.
+- Deployment ordering is the key order in your `deployments` object.
 - `artifact.abi` is required at runtime (deployment fails if missing).
-

@@ -12,6 +12,7 @@ import {
   withErc20Balance,
   withFork,
   withFundedWallet,
+  withMultiChain,
   withSnapshot,
   type ContractArtifact,
   type RuntimeHandle,
@@ -41,8 +42,9 @@ describe("suite-scoped runtime (external lifecycle)", () => {
       withExternalRuntime({ runtime, clients: { chainId: 31_337 } }),
       withSnapshot(),
       withFundedWallet({ balance: parseEther("2") }),
-      async ({ wallet, publicClient }) => {
-        const balance = await publicClient.getBalance({ address: wallet });
+      async ({ chains }) => {
+        const ch = chains!.default!;
+        const balance = await ch.publicClient.getBalance({ address: ch.wallet! });
         expect(balance).toBe(parseEther("2"));
       },
     )();
@@ -53,13 +55,14 @@ describe("suite-scoped runtime (external lifecycle)", () => {
       withExternalRuntime({ runtime, clients: { chainId: 31_337 } }),
       withSnapshot(),
       withFundedWallet({ balance: parseEther("1") }),
-      async ({ wallet, publicClient, testClient }) => {
-        const original = await publicClient.getBalance({ address: wallet });
-        await testClient.setBalance({
-          address: wallet,
+      async ({ chains }) => {
+        const ch = chains!.default!;
+        const original = await ch.publicClient.getBalance({ address: ch.wallet! });
+        await ch.testClient.setBalance({
+          address: ch.wallet!,
           value: parseEther("9"),
         });
-        const changed = await publicClient.getBalance({ address: wallet });
+        const changed = await ch.publicClient.getBalance({ address: ch.wallet! });
         expect(original).toBe(parseEther("1"));
         expect(changed).toBe(parseEther("9"));
       },
@@ -75,11 +78,12 @@ test(
       blockNumber: 22_000_000n,
     }),
     withBundler({ entryPoint: entryPoint4337, mode: "alto" }),
-    async ({ entryPoint, bundlerUrl, bundlerClient }) => {
-      expect(entryPoint).toBe(entryPoint4337);
-      expect(bundlerUrl).toMatch(/^http:\/\/127\.0\.0\.1:\d+$/);
-      const supported = await bundlerClient.getSupportedEntryPoints();
-      const normalized = supported.map((a) => getAddress(a));
+    async ({ chains }) => {
+      const ch = chains!.default!;
+      expect(ch.entryPoint).toBe(entryPoint4337);
+      expect(ch.bundlerUrl).toMatch(/^http:\/\/127\.0\.0\.1:\d+$/);
+      const supported = await ch.bundlerClient!.getSupportedEntryPoints();
+      const normalized = supported.map((a: `0x${string}`) => getAddress(a));
       expect(normalized).toContain(entryPoint4337);
     },
   ),
@@ -93,8 +97,9 @@ test(
     withFundedWallet({
       balance: parseEther("1"),
     }),
-    async ({ wallet, publicClient }) => {
-      const balance = await publicClient.getBalance({ address: wallet });
+    async ({ chains }) => {
+      const ch = chains!.default!;
+      const balance = await ch.publicClient.getBalance({ address: ch.wallet! });
       expect(balance).toBe(parseEther("1"));
     },
   ),
@@ -110,12 +115,13 @@ test(
     withFundedWallet({
       balance: parseEther("1"),
     }),
-    async ({ wallet, publicClient }) => {
-      const tokenBalance = await publicClient.readContract({
+    async ({ chains }) => {
+      const ch = chains!.default!;
+      const tokenBalance = await ch.publicClient.readContract({
         address: wethAddress,
         abi: erc20Abi,
         functionName: "balanceOf",
-        args: [wallet],
+        args: [ch.wallet!],
       });
 
       expect(tokenBalance).toBe(0n);
@@ -139,12 +145,13 @@ test(
         },
       ],
     }),
-    async ({ wallet, publicClient }) => {
-      const tokenBalance = await publicClient.readContract({
+    async ({ chains }) => {
+      const ch = chains!.default!;
+      const tokenBalance = await ch.publicClient.readContract({
         address: usdcAddress,
         abi: erc20Abi,
         functionName: "balanceOf",
-        args: [wallet],
+        args: [ch.wallet!],
       });
       expect(tokenBalance).toBe(1_000_000n);
     },
@@ -165,12 +172,13 @@ test(
       token: usdcAddress,
       amount: 1_000_000n,
     }),
-    async ({ wallet, publicClient }) => {
-      const tokenBalance = await publicClient.readContract({
+    async ({ chains }) => {
+      const ch = chains!.default!;
+      const tokenBalance = await ch.publicClient.readContract({
         address: usdcAddress,
         abi: erc20Abi,
         functionName: "balanceOf",
-        args: [wallet],
+        args: [ch.wallet!],
       });
       expect(tokenBalance).toBe(1_000_000n);
     },
@@ -182,13 +190,15 @@ test(
   scenario(
     withChain(),
     withDeployments({
-      answer: {
-        artifact: answerArtifact as ContractArtifact,
-        args: [],
+      deployments: {
+        answer: {
+          artifact: answerArtifact as ContractArtifact,
+          args: [],
+        },
       },
     }),
-    async ({ deployments }) => {
-      const deployment = deployments?.answer;
+    async ({ chains }) => {
+      const deployment = chains!.default!.deployments?.answer;
       if (!deployment) {
         throw new Error("Expected deployment record for answer.");
       }
@@ -204,18 +214,60 @@ test(
   scenario(
     withChain(),
     withContracts({
-      answer: {
-        artifact: answerArtifact as ContractArtifact,
-        address: "0x1000000000000000000000000000000000000001",
+      contracts: {
+        answer: {
+          artifact: answerArtifact as ContractArtifact,
+          address: "0x1000000000000000000000000000000000000001",
+        },
       },
     }),
-    async ({ contracts }) => {
-      const contract = contracts?.answer;
+    async ({ chains }) => {
+      const contract = chains!.default!.contracts?.answer;
       if (!contract) {
         throw new Error("Expected contract handle for answer.");
       }
       const value = await (contract as any).read.answer();
       expect(value).toBe(42n);
+    },
+  ),
+);
+
+test(
+  "withMultiChain: two local chains with independent funded wallets",
+  scenario(
+    withMultiChain({
+      a: { type: "chain", chainId: 31_337 },
+      b: { type: "chain", chainId: 31_338 },
+    }),
+    withFundedWallet({ chain: "a", balance: parseEther("1") }),
+    withFundedWallet({ chain: "b", balance: parseEther("2") }),
+    async ({ chains }) => {
+      const a = chains!.a!;
+      const b = chains!.b!;
+      const ba = await a.publicClient.getBalance({ address: a.wallet! });
+      const bb = await b.publicClient.getBalance({ address: b.wallet! });
+      expect(ba).toBe(parseEther("1"));
+      expect(bb).toBe(parseEther("2"));
+    },
+  ),
+);
+
+test(
+  "withMultiChain: snapshot on one chain does not revert the other",
+  scenario(
+    withMultiChain({
+      left: { type: "chain", chainId: 31_337 },
+      right: { type: "chain", chainId: 31_338 },
+    }),
+    withFundedWallet({ chain: "left", balance: parseEther("1") }),
+    withFundedWallet({ chain: "right", balance: parseEther("1") }),
+    withSnapshot({ chain: "left" }),
+    async ({ chains }) => {
+      const left = chains!.left!;
+      const right = chains!.right!;
+      await left.testClient.setBalance({ address: left.wallet!, value: parseEther("9") });
+      expect(await left.publicClient.getBalance({ address: left.wallet! })).toBe(parseEther("9"));
+      expect(await right.publicClient.getBalance({ address: right.wallet! })).toBe(parseEther("1"));
     },
   ),
 );

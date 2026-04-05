@@ -3,7 +3,7 @@ title: withExternalRuntime
 description: Attach a caller-owned runtime handle and wire viem clients, without starting or stopping Anvil.
 ---
 
-## `withExternalRuntime({ runtime, runtimeMode?, clients? })`
+## `withExternalRuntime({ runtime, runtimeMode?, clients?, chainKey? })`
 
 **Test runners:** Examples use Vitest `test` and `expect`. `scenario(...)` returns an async function you can pass to any runner with a similar `test` callback (for example Jest or Node `node:test`).
 
@@ -46,10 +46,11 @@ describe.sequential("external runtime lifecycle owned by the test file", () => {
     "builds shared state for later tests",
     scenario(
       withExternalRuntime({ runtime: handle }),
-      async ({ publicClient, testClient }) => {
-        const start = await publicClient.getBlockNumber();
-        await testClient.mine({ blocks: 2 });
-        sharedBlock = await publicClient.getBlockNumber();
+      async ({ chains }) => {
+        const ch = chains!.default;
+        const start = await ch.publicClient.getBlockNumber();
+        await ch.testClient.mine({ blocks: 2 });
+        sharedBlock = await ch.publicClient.getBlockNumber();
         expect(sharedBlock).toBe(start + 2n);
       },
     ),
@@ -59,8 +60,8 @@ describe.sequential("external runtime lifecycle owned by the test file", () => {
     "depends on the previous test's state",
     scenario(
       withExternalRuntime({ runtime: handle }),
-      async ({ publicClient }) => {
-        expect(await publicClient.getBlockNumber()).toBe(sharedBlock);
+      async ({ chains }) => {
+        expect(await chains!.default.publicClient.getBlockNumber()).toBe(sharedBlock);
       },
     ),
   );
@@ -70,10 +71,11 @@ describe.sequential("external runtime lifecycle owned by the test file", () => {
     scenario(
       withExternalRuntime({ runtime: handle }),
       withSnapshot(),
-      async ({ publicClient, testClient }) => {
-        const before = await publicClient.getBlockNumber();
-        await testClient.mine({ blocks: 5 });
-        expect(await publicClient.getBlockNumber()).toBe(before + 5n);
+      async ({ chains }) => {
+        const ch = chains!.default;
+        const before = await ch.publicClient.getBlockNumber();
+        await ch.testClient.mine({ blocks: 5 });
+        expect(await ch.publicClient.getBlockNumber()).toBe(before + 5n);
       },
     ),
   );
@@ -82,8 +84,8 @@ describe.sequential("external runtime lifecycle owned by the test file", () => {
     "proves isolated test did not leak shared state",
     scenario(
       withExternalRuntime({ runtime: handle }),
-      async ({ publicClient }) => {
-        expect(await publicClient.getBlockNumber()).toBe(sharedBlock);
+      async ({ chains }) => {
+        expect(await chains!.default.publicClient.getBlockNumber()).toBe(sharedBlock);
       },
     ),
   );
@@ -93,11 +95,13 @@ describe.sequential("external runtime lifecycle owned by the test file", () => {
 ### Options
 | Option | Type | Required? | Meaning (units/semantics) | Used for / affects |
 |---|---|---|---|---|
+| `chainKey` | `string` | No | Key on `ctx.chains` (default `default`). | Namespaces clients when composing multiple chains. |
 | `runtime` | `RuntimeHandle` | Yes | Live runtime handle created by `startRuntime(...)`. | Provides the RPC endpoint and runtime identity used by the scenario clients. |
 | `runtimeMode` | `"chain" \| "fork"` | No | Declares whether the attached runtime handle is chain or fork mode. Defaults to `"chain"`. | Enables mode-sensitive fixtures (for example `withBundler`, which requires fork mode). |
 | `clients` | `CreateClientsOptions` | No | Optional client wiring overrides for chain identity and signer key. | Selects viem chain id (`chainId`) and signer private key (`privateKey`). |
 
 ### Adds to context
+Under `ctx.chains[chainKey]` (default key `default`):
 - `runtime`
 - `runtimeMode` (defaults to `"chain"` when omitted)
 - `chain`

@@ -9,7 +9,7 @@ describe("withSnapshot", () => {
       step({} as any, async () => {
         throw new Error("next should not run");
       }),
-    ).rejects.toThrow(/missing runtime clients/i);
+    ).rejects.toThrow(/missing runtime clients for chain "default"/i);
   });
 
   test("creates snapshot, runs next, and reverts on success", async () => {
@@ -20,10 +20,14 @@ describe("withSnapshot", () => {
     const step = withSnapshot();
     await step(
       {
-        runtime: { rpcUrl: "http://127.0.0.1:8545" },
-        publicClient: {},
-        walletClient: {},
-        testClient: { snapshot, revert },
+        chains: {
+          default: {
+            runtime: { rpcUrl: "http://127.0.0.1:8545" },
+            publicClient: {},
+            walletClient: {},
+            testClient: { snapshot, revert },
+          },
+        },
       } as any,
       next,
     );
@@ -41,10 +45,14 @@ describe("withSnapshot", () => {
     await expect(
       step(
         {
-          runtime: { rpcUrl: "http://127.0.0.1:8545" },
-          publicClient: {},
-          walletClient: {},
-          testClient: { snapshot, revert },
+          chains: {
+            default: {
+              runtime: { rpcUrl: "http://127.0.0.1:8545" },
+              publicClient: {},
+              walletClient: {},
+              testClient: { snapshot, revert },
+            },
+          },
         } as any,
         async () => {
           throw new Error("boom");

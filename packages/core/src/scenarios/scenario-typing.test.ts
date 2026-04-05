@@ -7,6 +7,7 @@ import { withExternalRuntime } from "./fixtures/withExternalRuntime.js";
 import { withFundedWallet } from "./fixtures/withFundedWallet.js";
 import { withErc20Balance } from "./fixtures/withErc20Balance.js";
 import { withBundler } from "./fixtures/withBundler.js";
+import { withMultiChain } from "./fixtures/withMultiChain.js";
 import type { ScenarioFundedWalletContext, ScenarioRuntimeClientsContext, ScenarioStep, ScenarioTest } from "./types.js";
 import type { ScenarioBundlerContext } from "./types.js";
 
@@ -16,6 +17,10 @@ type StepOut<S> = S extends ScenarioStep<any, infer O> ? O : never;
 
 test("withChain output type is runtime clients context", () => {
   expectTypeOf<StepOut<ReturnType<typeof withChain>>>().toEqualTypeOf<ScenarioRuntimeClientsContext>();
+});
+
+test("withMultiChain output type is runtime clients context", () => {
+  expectTypeOf<StepOut<ReturnType<typeof withMultiChain>>>().toEqualTypeOf<ScenarioRuntimeClientsContext>();
 });
 
 test("withExternalRuntime output type is runtime clients context", () => {

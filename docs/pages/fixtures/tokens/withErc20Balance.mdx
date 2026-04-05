@@ -3,7 +3,7 @@ title: withErc20Balance
 description: Seed an ERC-20 balance for a recipient in local/forked test state.
 ---
 
-## `withErc20Balance({ token, amount[, to] })`
+## `withErc20Balance({ token, amount[, chain, to] })`
 
 **Test runners:** Examples use Vitest `test` and `expect`. `scenario(...)` returns an async function you can pass to any runner with a similar `test` callback (for example Jest or Node `node:test`).
 
@@ -27,13 +27,14 @@ test(
       token: USDC,
       amount: 1_000_000n,
     }),
-    async ({ publicClient, walletClient }) => {
+    async ({ chains }) => {
+      const ch = chains!.default;
       expect(
-        await publicClient.readContract({
+        await ch.publicClient.readContract({
           address: USDC,
           abi: erc20Abi,
           functionName: "balanceOf",
-          args: [walletClient.account!.address],
+          args: [ch.wallet!],
         }),
       ).toBe(1_000_000n);
     },
@@ -44,20 +45,20 @@ test(
 ### Options
 | Option | Type | Required? | Meaning (units/semantics) | Used for / affects |
 |---|---|---|---|---|
+| `chain` | `string` | No | Key on `ctx.chains` (default `default`). | Selects which chain receives the balance write. |
 | `token` | `Address` | Yes | ERC-20 token contract address. | Determines which token storage is rewritten. |
 | `amount` | `bigint` | Yes | Token raw units balance (for example, from `parseUnits`). | Sets the recipient's balance in token raw units. |
-| `to` | `Address` | No | Recipient address to set. When omitted, uses `ctx.wallet`. | Chooses the account whose balance state is rewritten. |
+| `to` | `Address` | No | Recipient address to set. When omitted, uses `ctx.chains[chain].wallet`. | Chooses the account whose balance state is rewritten. |
 
 ### Adds to context
-None; this fixture mainly mutates node state before forwarding to the callback.
+None; this fixture mainly mutates node state before forwarding to the callback (it may refresh `wallet` on the chain entry when `to` is omitted).
 
 ### Context requirements
-- Requires runtime + clients from `withChain`, `withFork`, or `withExternalRuntime` so `ctx.testClient` exists.
-- If `to` is omitted, `ctx.wallet` must already be set (typically by `withFundedWallet`).
+- Requires runtime + clients on the target chain from `withChain`, `withFork`, `withExternalRuntime`, or `withMultiChain` so `ctx.chains[chain].testClient` exists.
+- If `to` is omitted, `ctx.chains[chain].wallet` must already be set (typically by `withFundedWallet`).
 
 ### Lifecycle
 Managed middleware that writes test-only token state on entry, then forwards to `next`.
 
 ### Notes and caveats
 This is test-only state manipulation: it rewrites token balance state on the node and is not a production mint path. It may fail for non-standard token implementations (for example rebasing tokens or unusual storage layouts).
-

@@ -1,0 +1,54 @@
+---
+title: withMultiChain
+description: Start or attach multiple Anvil runtimes and expose them as named entries on ctx.chains.
+---
+
+## withMultiChain(config)
+
+**Test runners:** Examples use Vitest `test` and `expect`. `scenario(...)` returns an async function you can pass to any runner with a similar `test` callback (for example Jest or Node `node:test`).
+
+### Why it is useful
+Use `withMultiChain` when a single test needs more than one isolated EVM context (for example Ethereum plus an L2, or two pinned forks). Each key in `config` becomes `ctx.chains.<key>` with its own `runtime`, `publicClient`, `walletClient`, and `testClient`.
+
+### Example
+```ts twoslash [index.ts]
+import { test, expect } from "vitest";
+import { parseEther } from "viem";
+import { scenario, withMultiChain, withFundedWallet } from "@st8craft/core";
+
+test(
+  "two local chains",
+  scenario(
+    withMultiChain({
+      a: { type: "chain", chainId: 31_337 },
+      b: { type: "chain", chainId: 31_338 },
+    }),
+    withFundedWallet({ chain: "a", balance: parseEther("1") }),
+    withFundedWallet({ chain: "b", balance: parseEther("2") }),
+    async ({ chains }) => {
+      const ba = await chains!.a.publicClient.getBalance({ address: chains!.a.wallet! });
+      const bb = await chains!.b.publicClient.getBalance({ address: chains!.b.wallet! });
+      expect(ba).toBe(parseEther("1"));
+      expect(bb).toBe(parseEther("2"));
+    },
+  ),
+);
+```
+
+### Config shape
+Each entry is a tagged union:
+
+| `type` | Meaning |
+| --- | --- |
+| `"chain"` | Fresh Anvil chain (optional `chainId`, `key`). |
+| `"fork"` | Pinned fork (`rpcUrl`, `blockNumber`, optional `chainId`, `key`). |
+| `"external"` | Attach an existing `runtime` (optional `runtimeMode`, `clients`). |
+
+### Lifecycle
+Runtimes started by this fixture are stopped in reverse startup order in `finally`. External runtimes are never stopped here.
+
+### Adds to context
+- `chains`: a map of chain keys to full chain contexts (same fields as [`withChain`](/fixtures/runtime/withChain) per entry).
+
+### Context requirements
+None; this fixture can be the first runtime step, or compose after other steps that already set `ctx.chains` (duplicate keys throw).

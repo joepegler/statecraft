@@ -3,7 +3,7 @@ title: withFork
 description: Start a local Anvil fork from a remote JSON-RPC endpoint at a pinned block.
 ---
 
-## `withFork({ rpcUrl, blockNumber[, chainId, key] })`
+## `withFork({ rpcUrl, blockNumber[, chainId, key, chainKey] })`
 
 **Test runners:** Examples use Vitest `test` and `expect`. `scenario(...)` returns an async function you can pass to any runner with a similar `test` callback (for example Jest or Node `node:test`).
 
@@ -23,9 +23,10 @@ test(
       blockNumber: 22_000_000n,
     }),
     withFundedWallet({ balance: 1n }),
-    async ({ publicClient, walletClient }) => {
+    async ({ chains }) => {
+      const ch = chains!.default;
       expect(
-        await publicClient.getBalance({ address: walletClient.account!.address }),
+        await ch.publicClient.getBalance({ address: ch.wallet! }),
       ).toBe(1n);
     },
   ),
@@ -35,12 +36,14 @@ test(
 ### Options
 | Option | Type | Required? | Meaning (units/semantics) | Used for / affects |
 |---|---|---|---|---|
+| `chainKey` | `string` | No | Key on `ctx.chains` (default `default`). | Namespaces clients when composing multiple chains. |
 | `rpcUrl` | `string` | Yes | HTTP(S) RPC URL to fork. | Source for remote chain state. |
 | `blockNumber` | `bigint` | Yes | Pinned fork block number. | Determinism: pins the fork so reads and state are stable. |
 | `chainId` | `number` | No | Anvil `--chain-id` override. | Client chain identity (advanced). |
 | `key` | `string` | No | Stable correlation id forwarded to the runtime layer. | Correlates runtime config across restarts (advanced). |
 
 ### Adds to context
+Under `ctx.chains[chainKey]` (default key `default`):
 - `runtime`
 - `runtimeMode` (`"fork"`)
 - `chain`
@@ -57,4 +60,3 @@ Managed lifecycle, the fixture starts and stops Anvil for the scenario.
 ### Notes and caveats
 - Prefer pinned `blockNumber` values for determinism.
 - This fixture is intended for compatible local/forked runtimes (Anvil-style). 
-

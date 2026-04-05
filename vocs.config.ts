@@ -160,6 +160,7 @@ export default defineConfig({
               text: "withExternalRuntime",
               link: "/fixtures/runtime/withExternalRuntime",
             },
+            { text: "withMultiChain", link: "/fixtures/runtime/withMultiChain" },
             { text: "withBundler", link: "/fixtures/runtime/withBundler" },
           ],
         },

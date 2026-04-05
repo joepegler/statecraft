@@ -18,12 +18,13 @@ describe("withExternalRuntime", () => {
 
     expect(next).toHaveBeenCalledTimes(1);
     const [ctx] = next.mock.calls[0]!;
-    expect(ctx.runtime.key).toBe("suite");
-    expect(ctx.runtimeMode).toBe("chain");
-    expect(ctx.chain).toBeDefined();
-    expect(ctx.publicClient).toBeDefined();
-    expect(ctx.walletClient).toBeDefined();
-    expect(ctx.testClient).toBeDefined();
+    const ch = ctx.chains!.default;
+    expect(ch.runtime.key).toBe("suite");
+    expect(ch.runtimeMode).toBe("chain");
+    expect(ch.chain).toBeDefined();
+    expect(ch.publicClient).toBeDefined();
+    expect(ch.walletClient).toBeDefined();
+    expect(ch.testClient).toBeDefined();
   });
 
   test("does not stop runtime lifecycle", async () => {

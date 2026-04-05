@@ -38,9 +38,10 @@ test(
   scenario(
     withChain(),
     withFundedWallet({ balance: parseEther("1") }),
-    async ({ publicClient, walletClient }) => {
-      const balance = await publicClient.getBalance({
-        address: walletClient.account!.address,
+    async ({ chains }) => {
+      const ch = chains!.default;
+      const balance = await ch.publicClient.getBalance({
+        address: ch.wallet!,
       });
       expect(balance).toBe(parseEther("1"));
     },
@@ -68,7 +69,7 @@ As a rule of thumb, you should be able to read a test and answer "what state doe
 
 ## Type safety in practice
 
-Because TypeScript understands the fixture order, it can infer which fields are available in your `async ({ ... })` callback. In the example above, `publicClient` and `wallet` exist because you included `withChain()` and `withFundedWallet()`.
+Because TypeScript understands the fixture order, it can infer which fields are available in your `async ({ ... })` callback. In the example above, `chains.default` includes viem clients after `withChain()`, and `chains.default.wallet` after `withFundedWallet()`.
 
 If you write custom fixtures, use `requireContext` to fail fast when a step expects keys that are not present.
 

@@ -3,7 +3,7 @@ title: withFundedWallet
 description: Create a funded scenario account, optionally seeding ERC-20 balances for that account.
 ---
 
-## `withFundedWallet({ balance[, privateKey, erc20] })`
+## `withFundedWallet({ balance[, chain, privateKey, erc20] })`
 
 **Test runners:** Examples use Vitest `test` and `expect`. `scenario(...)` returns an async function you can pass to any runner with a similar `test` callback (for example Jest or Node `node:test`).
 
@@ -21,8 +21,9 @@ test(
   scenario(
     withChain(),
     withFundedWallet({ balance: parseEther("1") }),
-    async ({ publicClient, walletClient }) => {
-      expect(await publicClient.getBalance({ address: walletClient.account!.address })).toBe(
+    async ({ chains }) => {
+      const ch = chains!.default;
+      expect(await ch.publicClient.getBalance({ address: ch.wallet! })).toBe(
         parseEther("1"),
       );
     },
@@ -33,21 +34,22 @@ test(
 ### Options
 | Option | Type | Required? | Meaning (units/semantics) | Used for / affects |
 |---|---|---|---|---|
+| `chain` | `string` | No | Key on `ctx.chains` (default `default`). | Selects which chain receives the funded account. |
 | `balance` | `bigint` | Yes | ETH balance to set in wei. | Sets the funded address ETH balance via anvil test-client state mutation. |
-| `privateKey` | `Hex` | No | Stable signer key to use instead of generating a new one. | Determines `walletClient.account` and `ctx.wallet`. |
+| `privateKey` | `Hex` | No | Stable signer key to use instead of generating a new one. | Determines `walletClient.account` and `ctx.chains[chain].wallet`. |
 | `erc20` | `readonly WithFundedWalletErc20Balance[]` | No | Optional ERC-20 seeds for the funded address. Each entry is `{ token: Address; amount: bigint }` where `amount` is raw token units. | Writes token balance state for the funded address after ETH funding. |
 
 ### Adds to context
+On `ctx.chains[chain]`:
 - `wallet`
-- `walletClient`
+- `walletClient` (replaced with the funded account)
 
 ### Context requirements
-Requires runtime + clients from `withChain`, `withFork`, or `withExternalRuntime` so `ctx.testClient` exists.
+Requires runtime + clients on the target chain from `withChain`, `withFork`, `withExternalRuntime`, or `withMultiChain` so `ctx.chains[chain].testClient` exists.
 
 ### Lifecycle
 Managed with respect to the wallet setup, this fixture does not start or stop Anvil.
 
 ### Notes and caveats
 - This is test-only state manipulation: it sets balance storage on compatible local/forked runtimes.
-- If you call `withFundedWallet` multiple times inside the same scenario, the last one wins for `ctx.wallet` and `ctx.walletClient`.
-
+- If you call `withFundedWallet` multiple times for the same `chain` inside the same scenario, the last one wins for `wallet` and `walletClient` on that chain entry.

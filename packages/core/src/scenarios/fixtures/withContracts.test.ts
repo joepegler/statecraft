@@ -17,9 +17,11 @@ vi.mock("viem", async (importOriginal) => {
 describe("withContracts", () => {
   test("throws when runtime clients are missing", async () => {
     const step = withContracts({
-      token: {
-        address: "0x00000000000000000000000000000000000000aa",
-        artifact: { deployedBytecode: "0x60016000f3" },
+      contracts: {
+        token: {
+          address: "0x00000000000000000000000000000000000000aa",
+          artifact: { deployedBytecode: "0x60016000f3" },
+        },
       },
     });
 
@@ -27,7 +29,7 @@ describe("withContracts", () => {
       step({} as any, async () => {
         throw new Error("next should not run");
       }),
-    ).rejects.toThrow(/missing runtime clients/i);
+    ).rejects.toThrow(/missing runtime clients for chain "default"/i);
   });
 
   test("sets code, calls afterSetCode, and merges named contracts", async () => {
@@ -36,37 +38,44 @@ describe("withContracts", () => {
     getContract.mockImplementation(({ address }) => ({ address, kind: "contract" }));
 
     const ctx = {
-      runtime: { rpcUrl: "http://127.0.0.1:8545" },
-      publicClient: {},
-      walletClient: {},
-      testClient: { setCode },
-      contracts: { existing: { address: "0x0000000000000000000000000000000000000001" } },
+      chains: {
+        default: {
+          runtime: { rpcUrl: "http://127.0.0.1:8545" },
+          publicClient: {},
+          walletClient: {},
+          testClient: { setCode },
+          contracts: { existing: { address: "0x0000000000000000000000000000000000000001" } },
+        },
+      },
     } as any;
 
     const step = withContracts({
-      token: {
-        address: "0x00000000000000000000000000000000000000aa",
-        artifact: {
-          abi: [],
-          deployedBytecode: { object: "0x60016000f3" as Hex },
+      contracts: {
+        token: {
+          address: "0x00000000000000000000000000000000000000aa",
+          artifact: {
+            abi: [],
+            deployedBytecode: { object: "0x60016000f3" as Hex },
+          },
+          afterSetCode,
         },
-        afterSetCode,
-      },
-      proxy: {
-        address: "0x00000000000000000000000000000000000000bb",
-        artifact: {
-          deployedBytecode: "0x60026000f3",
+        proxy: {
+          address: "0x00000000000000000000000000000000000000bb",
+          artifact: {
+            deployedBytecode: "0x60026000f3",
+          },
         },
       },
     });
 
     const next = vi.fn(async (nextCtx: any) => {
-      expect(nextCtx.contracts.existing).toEqual(ctx.contracts.existing);
-      expect(nextCtx.contracts.token).toEqual({
+      const c = nextCtx.chains.default.contracts;
+      expect(c.existing).toEqual(ctx.chains.default.contracts.existing);
+      expect(c.token).toEqual({
         address: "0x00000000000000000000000000000000000000aa",
         kind: "contract",
       });
-      expect(nextCtx.contracts.proxy).toEqual({
+      expect(c.proxy).toEqual({
         address: "0x00000000000000000000000000000000000000bb",
       });
     });
@@ -82,11 +91,12 @@ describe("withContracts", () => {
       bytecode: "0x60026000f3",
     });
     expect(afterSetCode).toHaveBeenCalledWith({
+      chain: "default",
       name: "token",
       address: "0x00000000000000000000000000000000000000aa",
-      testClient: ctx.testClient,
-      publicClient: ctx.publicClient,
-      walletClient: ctx.walletClient,
+      testClient: ctx.chains.default.testClient,
+      publicClient: ctx.chains.default.publicClient,
+      walletClient: ctx.chains.default.walletClient,
     });
     expect(getContract).toHaveBeenCalledTimes(1);
     expect(next).toHaveBeenCalledTimes(1);

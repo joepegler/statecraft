@@ -103,11 +103,11 @@ Build small, composable pieces:
 - `withSmartAccount`
 - `withPaymaster`
 
-## Multi-chain (future)
+## Multi-chain
 
-Represent as namespaced contexts:
-`ctx.chains.ethereum`, `ctx.chains.base`.
-Do not simulate cross-chain logic in v1.
+Represent chain state as namespaced contexts: `ctx.chains.<key>` (for example `ctx.chains.ethereum`, `ctx.chains.base`).
+Use `withMultiChain` for multiple runtimes in one scenario, or repeat single-chain fixtures with different `chainKey` values.
+Do not simulate cross-chain messaging or bridges in v1 unless you add explicit test doubles for that scope.
 
 ## Development Priorities
 
