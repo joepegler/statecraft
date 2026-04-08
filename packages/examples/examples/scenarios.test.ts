@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, test } from "vitest";
+import { afterAll, beforeAll, describe, expect, test, vi } from "vitest";
 import { getAddress, parseEther } from "viem";
 import {
   scenario,
@@ -10,10 +10,12 @@ import {
   withContracts,
   withDeployments,
   withErc20Balance,
+  withBridge,
   withFork,
   withFundedWallet,
   withMultiChain,
   withSnapshot,
+  NATIVE_TOKEN_ADDRESS,
   type ContractArtifact,
   type RuntimeHandle,
 } from "@st8craft/core";
@@ -268,6 +270,62 @@ test(
       await left.testClient.setBalance({ address: left.wallet!, value: parseEther("9") });
       expect(await left.publicClient.getBalance({ address: left.wallet! })).toBe(parseEther("9"));
       expect(await right.publicClient.getBalance({ address: right.wallet! })).toBe(parseEther("1"));
+    },
+  ),
+);
+
+test(
+  "withBridge: test controls bridge timing with Vitest helpers",
+  scenario(
+    withMultiChain({
+      src: { type: "chain", chainId: 31_337 },
+      dest: { type: "chain", chainId: 31_338 },
+    }),
+    withFundedWallet({ chain: "src", balance: parseEther("5") }),
+    withFundedWallet({ chain: "dest", balance: parseEther("1") }),
+    withBridge({
+      srcChain: "src",
+      destChain: "dest",
+      fromToken: NATIVE_TOKEN_ADDRESS,
+      toToken: NATIVE_TOKEN_ADDRESS,
+      priceScale: 2n,
+    }),
+    async ({ chains, bridge }) => {
+      const src = chains!.src!;
+      const dest = chains!.dest!;
+      const bridgeExecute = vi.fn(bridge!.execute);
+
+      expect(await src.publicClient.getBalance({ address: src.wallet! })).toBe(parseEther("5"));
+      expect(await dest.publicClient.getBalance({ address: dest.wallet! })).toBe(parseEther("1"));
+
+      vi.useFakeTimers();
+      let bridgeReceipt: Awaited<ReturnType<NonNullable<typeof bridge>["execute"]>> | undefined;
+      let bridgeTask: Promise<void> | undefined;
+      try {
+        setTimeout(() => {
+          bridgeTask = bridgeExecute({
+              amountIn: parseEther("2"),
+              price: 2n,
+            })
+            .then((receipt) => {
+              bridgeReceipt = receipt;
+            });
+        }, 250);
+
+        await vi.advanceTimersByTimeAsync(250);
+        await vi.waitFor(() => {
+          expect(bridgeTask).toBeDefined();
+        });
+
+        await bridgeTask!;
+      } finally {
+        vi.useRealTimers();
+      }
+
+      expect(bridgeReceipt?.amountOut).toBe(parseEther("2"));
+      expect(bridgeExecute).toHaveBeenCalledTimes(1);
+      expect(await src.publicClient.getBalance({ address: src.wallet! })).toBe(parseEther("3"));
+      expect(await dest.publicClient.getBalance({ address: dest.wallet! })).toBe(parseEther("3"));
     },
   ),
 );

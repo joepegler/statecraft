@@ -8,8 +8,9 @@ import { withFundedWallet } from "./fixtures/withFundedWallet.js";
 import { withErc20Balance } from "./fixtures/withErc20Balance.js";
 import { withBundler } from "./fixtures/withBundler.js";
 import { withMultiChain } from "./fixtures/withMultiChain.js";
+import { withBridge } from "./fixtures/withBridge.js";
 import type { ScenarioFundedWalletContext, ScenarioRuntimeClientsContext, ScenarioStep, ScenarioTest } from "./types.js";
-import type { ScenarioBundlerContext } from "./types.js";
+import { NATIVE_TOKEN_ADDRESS, type ScenarioBridgeContext, type ScenarioBundlerContext } from "./types.js";
 
 const USDC_MAINNET = "0xA0b86991c6218b36c1d19D4a2e9Eb0ce3606eB48" as const;
 
@@ -80,6 +81,16 @@ test("withBundler output type is scenario bundler context", () => {
   expectTypeOf<StepOut<ReturnType<typeof withBundler>>>().toEqualTypeOf<ScenarioBundlerContext>();
 });
 
+test("withBridge output type is scenario bridge context", () => {
+  expectTypeOf<
+    StepOut<
+      ReturnType<
+        typeof withBridge<ScenarioRuntimeClientsContext>
+      >
+    >
+  >().toEqualTypeOf<ScenarioBridgeContext>();
+});
+
 test("scenario(fork, bundler, test) accepts ScenarioTest<ScenarioBundlerContext>", () => {
   const t: ScenarioTest<ScenarioBundlerContext> = async (_ctx) => {};
   expectTypeOf(
@@ -87,6 +98,25 @@ test("scenario(fork, bundler, test) accepts ScenarioTest<ScenarioBundlerContext>
       withFork({ rpcUrl: "http://example.invalid", blockNumber: 1n }),
       withBundler({
         entryPoint: ENTRYPOINT_V07,
+      }),
+      t,
+    ),
+  ).toEqualTypeOf<() => Promise<void>>();
+});
+
+test("scenario(multichain, bridge, test) accepts ScenarioTest<ScenarioBridgeContext>", () => {
+  const t: ScenarioTest<ScenarioBridgeContext> = async (_ctx) => {};
+  expectTypeOf(
+    scenario(
+      withMultiChain({
+        src: { type: "chain", chainId: 31337 },
+        dest: { type: "chain", chainId: 31338 },
+      }),
+      withBridge({
+        srcChain: "src",
+        destChain: "dest",
+        fromToken: NATIVE_TOKEN_ADDRESS,
+        toToken: NATIVE_TOKEN_ADDRESS,
       }),
       t,
     ),

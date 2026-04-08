@@ -98,6 +98,7 @@ export type ScenarioChainContext = {
  */
 export type ScenarioContext = {
   chains?: Record<string, ScenarioChainContext>;
+  bridge?: ScenarioBridge;
 };
 
 /**
@@ -116,6 +117,77 @@ export type ScenarioFundedWalletContext = ScenarioRuntimeClientsContext;
  * Context after {@link withBundler}: the targeted chain entry includes bundler fields.
  */
 export type ScenarioBundlerContext = ScenarioRuntimeClientsContext;
+
+/**
+ * Native token sentinel address used by bridge test-doubles to represent chain native balance mutations.
+ */
+export const NATIVE_TOKEN_ADDRESS = "0x0000000000000000000000000000000000000000";
+
+/**
+ * Static route configuration for bridge simulation between two named chains.
+ */
+export type WithBridgeConfig = {
+  /** Source chain key from `ctx.chains`. */
+  srcChain: string;
+  /** Destination chain key from `ctx.chains`. */
+  destChain: string;
+  /** Source asset address, or {@link NATIVE_TOKEN_ADDRESS} for native balance. */
+  fromToken: Address;
+  /** Destination asset address, or {@link NATIVE_TOKEN_ADDRESS} for native balance. */
+  toToken: Address;
+  /** Optional default source account; falls back to `ctx.chains[srcChain].wallet` at call time. */
+  from?: Address;
+  /** Optional default destination account; falls back to `ctx.chains[destChain].wallet` at call time. */
+  to?: Address;
+  /**
+   * Divisor for bridge price math. Destination amount is `amountIn * price / priceScale`.
+   * Defaults to `1n`.
+   */
+  priceScale?: bigint;
+};
+
+/**
+ * Per-call bridge execution input.
+ */
+export type BridgeExecuteArgs = {
+  /** Source amount debited from source chain/account. */
+  amountIn: bigint;
+  /** Bridge conversion price used for destination amount math. */
+  price: bigint;
+  /** Optional source account override for this execution. */
+  from?: Address;
+  /** Optional destination account override for this execution. */
+  to?: Address;
+};
+
+/**
+ * Result returned by one bridge simulation execution.
+ */
+export type BridgeExecution = {
+  srcChain: string;
+  destChain: string;
+  fromToken: Address;
+  toToken: Address;
+  from: Address;
+  to: Address;
+  amountIn: bigint;
+  amountOut: bigint;
+  price: bigint;
+};
+
+/**
+ * Callable bridge test-double exposed to tests through scenario context.
+ */
+export type ScenarioBridge = {
+  execute(args: BridgeExecuteArgs): Promise<BridgeExecution>;
+};
+
+/**
+ * Context after {@link withBridge}: includes a bridge executor chosen by the fixture config.
+ */
+export type ScenarioBridgeContext = ScenarioRuntimeClientsContext & {
+  bridge: ScenarioBridge;
+};
 
 /** Context passed to `ContractInjection.afterSetCode` from `withContracts`. */
 export type AfterSetCodeContext = {

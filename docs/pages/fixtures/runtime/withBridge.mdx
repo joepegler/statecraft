@@ -1,0 +1,66 @@
+---
+title: withBridge
+description: Expose a deterministic bridge simulator callback and let the test choose when to execute it.
+---
+
+## withBridge(config)
+
+`withBridge` is a test-double helper for multi-chain scenarios. It does not auto-run. Instead, it exposes `ctx.bridge.execute(...)` so the test decides exactly when to simulate a bridge transfer. You can wrap it with `vi.fn(...)` to assert integration points while still mutating balances across chains.
+
+Use this alongside [`withMultiChain`](/fixtures/runtime/withMultiChain) and chain-targeted wallet setup.
+
+### Example
+```ts twoslash [index.ts]
+import { test, expect, vi } from "vitest";
+import { parseEther } from "viem";
+import { scenario, withBridge, withFundedWallet, withMultiChain, NATIVE_TOKEN_ADDRESS } from "@st8craft/core";
+
+test(
+  "simulate bridge at a chosen test step",
+  scenario(
+    withMultiChain({
+      src: { type: "chain", chainId: 31_337 },
+      dest: { type: "chain", chainId: 31_338 },
+    }),
+    withFundedWallet({ chain: "src", balance: parseEther("2") }),
+    withFundedWallet({ chain: "dest", balance: parseEther("1") }),
+    withBridge({
+      srcChain: "src",
+      destChain: "dest",
+      fromToken: NATIVE_TOKEN_ADDRESS,
+      toToken: NATIVE_TOKEN_ADDRESS,
+    }),
+    async ({ chains, bridge }) => {
+      const src = chains!.src;
+      const dest = chains!.dest;
+      const executeBridge = vi.fn(bridge!.execute);
+
+      expect(await src.publicClient.getBalance({ address: src.wallet! })).toBe(parseEther("2"));
+
+      const bridgePromise = executeBridge({ amountIn: parseEther("1"), price: 1n });
+
+      await vi.waitFor(async () => {
+        expect(await dest.publicClient.getBalance({ address: dest.wallet! })).toBe(parseEther("2"));
+      });
+
+      await bridgePromise;
+      expect(executeBridge).toHaveBeenCalledTimes(1);
+    },
+  ),
+);
+```
+
+### Config
+- `srcChain`, `destChain`: chain keys from `ctx.chains`.
+- `fromToken`, `toToken`: token addresses. Use `NATIVE_TOKEN_ADDRESS` for native balance.
+- `from`, `to` (optional): default accounts, otherwise the chain wallet for each side.
+- `priceScale` (optional): destination math divisor. `amountOut = amountIn * price / priceScale`.
+
+### Execute args
+- `amountIn`: source debit amount.
+- `price`: conversion price used for destination amount.
+- `from`, `to` (optional): per-call address overrides.
+
+### Notes
+- This is test-only behavior that mutates local or forked test state.
+- The fixture does not attempt to model real bridge messaging or relayer behavior.

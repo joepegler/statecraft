@@ -11,13 +11,19 @@ export { withContracts } from "./fixtures/withContracts.js";
 export { withDeployments } from "./fixtures/withDeployments.js";
 export { withBundler } from "./fixtures/withBundler.js";
 export { withMultiChain } from "./fixtures/withMultiChain.js";
+export { withBridge } from "./fixtures/withBridge.js";
+export { NATIVE_TOKEN_ADDRESS } from "./types.js";
 
 export type {
   AfterDeployContext,
   AfterSetCodeContext,
   ContractArtifact,
   ScenarioBundlerContext,
+  ScenarioBridge,
+  ScenarioBridgeContext,
   ScenarioChainContext,
+  BridgeExecution,
+  BridgeExecuteArgs,
   DeploymentArgsResolver,
   DeploymentRecord,
   EmptyScenarioContext,
@@ -45,4 +51,5 @@ export type {
 } from "./fixtures/withDeployments.js";
 export type { WithBundlerConfig } from "./fixtures/withBundler.js";
 export type { WithMultiChainConfig, WithMultiChainEntry } from "./fixtures/withMultiChain.js";
+export type { WithBridgeConfig } from "./types.js";
 export type { WithSnapshotConfig } from "./fixtures/withSnapshot.js";
