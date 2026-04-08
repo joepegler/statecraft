@@ -101,4 +101,33 @@ describe("withContracts", () => {
     expect(getContract).toHaveBeenCalledTimes(1);
     expect(next).toHaveBeenCalledTimes(1);
   });
+
+  test("supports legacy config shape without `contracts` wrapper", async () => {
+    const setCode = vi.fn(async () => undefined);
+    const ctx = {
+      chains: {
+        default: {
+          runtime: { rpcUrl: "http://127.0.0.1:8545" },
+          publicClient: {},
+          walletClient: {},
+          testClient: { setCode },
+        },
+      },
+    } as any;
+
+    const step = withContracts({
+      token: {
+        address: "0x00000000000000000000000000000000000000aa",
+        artifact: {
+          deployedBytecode: "0x60016000f3",
+        },
+      },
+    });
+
+    await step(ctx, async () => undefined);
+    expect(setCode).toHaveBeenCalledWith({
+      address: "0x00000000000000000000000000000000000000aa",
+      bytecode: "0x60016000f3",
+    });
+  });
 });

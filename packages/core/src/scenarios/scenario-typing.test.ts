@@ -75,6 +75,12 @@ test("scenario(chain, erc20 with `to`, test) accepts ScenarioTest<ScenarioRuntim
   ).toEqualTypeOf<() => Promise<void>>();
 });
 
+test("scenario(chain, erc20 without `to`, test) is rejected without funded wallet fixture", () => {
+  const t: ScenarioTest<ScenarioRuntimeClientsContext> = async (_ctx) => {};
+  // @ts-expect-error missing funded wallet context when `to` is omitted
+  scenario(withChain(), withErc20Balance({ token: USDC_MAINNET, amount: 1n }), t);
+});
+
 const ENTRYPOINT_V07 = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789" as const;
 
 test("withBundler output type is scenario bundler context", () => {

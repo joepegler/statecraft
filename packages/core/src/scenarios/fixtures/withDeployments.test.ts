@@ -151,4 +151,35 @@ describe("withDeployments", () => {
     expect(getContract).toHaveBeenCalledTimes(2);
     expect(next).toHaveBeenCalledTimes(1);
   });
+
+  test("supports legacy config shape without `deployments` wrapper", async () => {
+    const account = { address: "0x000000000000000000000000000000000000000f" };
+    const deployContract = vi.fn(async () => "0xaaa");
+    const waitForTransactionReceipt = vi.fn(async () => ({
+      contractAddress: "0x00000000000000000000000000000000000000aa",
+    }));
+
+    const step = withDeployments({
+      token: {
+        artifact: { abi: [], bytecode: "0x60016000f3" },
+      },
+    });
+
+    await step(
+      {
+        chains: {
+          default: {
+            runtime: { rpcUrl: "http://127.0.0.1:8545" },
+            publicClient: { waitForTransactionReceipt },
+            walletClient: { account, deployContract },
+            testClient: {},
+          },
+        },
+      } as any,
+      async () => undefined,
+    );
+
+    expect(deployContract).toHaveBeenCalledTimes(1);
+    expect(waitForTransactionReceipt).toHaveBeenCalledTimes(1);
+  });
 });

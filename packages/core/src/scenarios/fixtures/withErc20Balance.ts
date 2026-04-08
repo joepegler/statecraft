@@ -24,7 +24,14 @@ export type WithErc20BalanceConfig = {
 
 export type WithErc20Balance = {
   (config: WithErc20BalanceConfig & { to: Address }): ScenarioStep<ScenarioRuntimeClientsContext, ScenarioRuntimeClientsContext>;
-  (config: Omit<WithErc20BalanceConfig, "to">): ScenarioStep<ScenarioFundedWalletContext, ScenarioFundedWalletContext>;
+  (config: Omit<WithErc20BalanceConfig, "to"> & { chain?: undefined }): ScenarioStep<
+    ScenarioFundedWalletContext<"default">,
+    ScenarioFundedWalletContext<"default">
+  >;
+  <C extends string>(config: Omit<WithErc20BalanceConfig, "to"> & { chain: C }): ScenarioStep<
+    ScenarioFundedWalletContext<C>,
+    ScenarioFundedWalletContext<C>
+  >;
 };
 
 /**
@@ -37,7 +44,7 @@ export type WithErc20Balance = {
  */
 export const withErc20Balance: WithErc20Balance = ((config: WithErc20BalanceConfig) => {
   const chainKey = config.chain ?? "default";
-  return async (ctx, next) => {
+  return async (ctx: ScenarioContext, next: (ctx: ScenarioContext) => Promise<void>) => {
     requireChainScopedRuntimeClients(ctx, chainKey);
     const ch = ctx.chains[chainKey]!;
 

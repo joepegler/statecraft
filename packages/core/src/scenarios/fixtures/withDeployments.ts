@@ -24,9 +24,18 @@ export type DeploymentSpec = {
 /**
  * Deployments for {@link withDeployments}. Use `chain` to select `ctx.chains[chain]` (default `default`).
  */
-export type WithDeploymentsConfig = {
+export type WithDeploymentsMap = Record<string, DeploymentSpec>;
+
+/**
+ * Deployments for {@link withDeployments}. Supports both legacy and scoped forms:
+ * - legacy: `withDeployments({ token: { ... } })`
+ * - scoped: `withDeployments({ chain: "mainnet", deployments: { token: { ... } } })`
+ */
+export type WithDeploymentsConfig =
+  | WithDeploymentsMap
+  | {
   chain?: string;
-  deployments: Record<string, DeploymentSpec>;
+  deployments: WithDeploymentsMap;
 };
 
 type DeploymentsMap = Record<string, DeploymentRecord>;
@@ -41,13 +50,13 @@ export function withDeployments<C extends ScenarioRuntimeClientsContext>(
   C & { chains: C["chains"] },
   C & { chains: C["chains"] }
 > {
-  const chainKey = config.chain ?? "default";
+  const { chainKey, deployments: deploymentMap } = normalizeWithDeploymentsConfig(config);
   return async (ctx, next) => {
     requireChainScopedRuntimeClients(ctx, chainKey);
     const ch = ctx.chains[chainKey]!;
     const deployments: DeploymentsMap = { ...(ch.deployments ?? {}) };
 
-    for (const [name, spec] of Object.entries(config.deployments)) {
+    for (const [name, spec] of Object.entries(deploymentMap)) {
       if (!spec.artifact.abi) {
         throw new Error(`${name}.artifact.abi is required for deployment.`);
       }
@@ -100,5 +109,27 @@ export function withDeployments<C extends ScenarioRuntimeClientsContext>(
         },
       },
     });
+  };
+}
+
+function normalizeWithDeploymentsConfig(config: WithDeploymentsConfig): { chainKey: string; deployments: WithDeploymentsMap } {
+  const maybeScoped = config as {
+    chain?: string;
+    deployments?: unknown;
+  };
+  if (maybeScoped.deployments && typeof maybeScoped.deployments === "object") {
+    const maybeLegacyDeploymentsKey = maybeScoped.deployments as { artifact?: unknown };
+    const isLegacyDeploymentsEntry = "artifact" in maybeLegacyDeploymentsKey;
+    if (!isLegacyDeploymentsEntry) {
+      return {
+        chainKey: maybeScoped.chain ?? "default",
+        deployments: maybeScoped.deployments as WithDeploymentsMap,
+      };
+    }
+  }
+
+  return {
+    chainKey: "default",
+    deployments: config as WithDeploymentsMap,
   };
 }

@@ -27,8 +27,14 @@ export type withImpersonationConfig = {
  * Requires prior runtime fixtures for that chain (`withChain`, `withFork`, `withExternalRuntime`, or `withMultiChain`).
  */
 export function withImpersonation(
+  config: withImpersonationConfig & { chain?: undefined },
+): ScenarioStep<ScenarioRuntimeClientsContext, ScenarioFundedWalletContext<"default">>;
+export function withImpersonation<C extends string>(
+  config: withImpersonationConfig & { chain: C },
+): ScenarioStep<ScenarioRuntimeClientsContext, ScenarioFundedWalletContext<C>>;
+export function withImpersonation(
   config: withImpersonationConfig,
-): ScenarioStep<ScenarioRuntimeClientsContext, ScenarioFundedWalletContext> {
+): ScenarioStep<ScenarioRuntimeClientsContext, ScenarioRuntimeClientsContext> {
   const chainKey = config.chain ?? "default";
   return async (ctx, next) => {
     requireChainScopedRuntimeClients(ctx, chainKey);

@@ -91,4 +91,30 @@ describe("withMultiChain", () => {
       ),
     ).rejects.toThrow(/duplicate chain key "a"/i);
   });
+
+  test("attempts to stop all owned runtimes even when one stop fails", async () => {
+    const runtimeA = { rpcUrl: "http://127.0.0.1:8545" };
+    const runtimeB = { rpcUrl: "http://127.0.0.1:8546" };
+    const clients = {
+      publicClient: { chain: { id: 31337 } },
+      walletClient: {},
+      testClient: {},
+    };
+    const stopErr = new Error("stop failed");
+
+    startRuntime.mockResolvedValueOnce(runtimeA).mockResolvedValueOnce(runtimeB);
+    createClients.mockReturnValue(clients);
+    stopRuntime.mockRejectedValueOnce(stopErr).mockResolvedValueOnce(undefined);
+
+    const { withMultiChain } = await import("./withMultiChain.js");
+    const step = withMultiChain({
+      a: { type: "chain" },
+      b: { type: "chain" },
+    });
+
+    await expect(step({} as any, async () => undefined)).rejects.toThrow(/stop failed/i);
+    expect(stopRuntime).toHaveBeenCalledTimes(2);
+    expect(stopRuntime).toHaveBeenNthCalledWith(1, runtimeB);
+    expect(stopRuntime).toHaveBeenNthCalledWith(2, runtimeA);
+  });
 });

@@ -49,6 +49,7 @@ export function withMultiChain(config: WithMultiChainConfig): ScenarioStep<Scena
     const owned: RuntimeHandle[] = [];
     const chains: Record<string, ScenarioChainContext> = { ...(ctx.chains ?? {}) };
 
+    let pipelineError: unknown;
     try {
       for (const key of sortedKeys) {
         const entry = config[key];
@@ -116,9 +117,24 @@ export function withMultiChain(config: WithMultiChainConfig): ScenarioStep<Scena
         ...ctx,
         chains,
       });
+    } catch (error) {
+      pipelineError = error;
     } finally {
+      const teardownErrors: unknown[] = [];
       for (const handle of owned.reverse()) {
-        await stopRuntime(handle);
+        try {
+          await stopRuntime(handle);
+        } catch (error) {
+          teardownErrors.push(error);
+        }
+      }
+
+      const errors = [...(pipelineError ? [pipelineError] : []), ...teardownErrors];
+      if (errors.length === 1) {
+        throw errors[0];
+      }
+      if (errors.length > 1) {
+        throw new AggregateError(errors, "withMultiChain(...) failed and one or more runtimes also failed to stop.");
       }
     }
   };

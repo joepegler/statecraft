@@ -111,12 +111,19 @@ export type ScenarioRuntimeClientsContext = ScenarioContext & {
 /**
  * Context after {@link withFundedWallet}: the targeted chain entry includes `wallet`. Prefer reading `ctx.chains[chain].wallet`.
  */
-export type ScenarioFundedWalletContext = ScenarioRuntimeClientsContext;
+export type ScenarioFundedWalletContext<ChainKey extends string = "default"> = ScenarioRuntimeClientsContext & {
+  chains: ScenarioRuntimeClientsContext["chains"] & Record<ChainKey, ScenarioChainContext & { wallet: Hex }>;
+};
 
 /**
  * Context after {@link withBundler}: the targeted chain entry includes bundler fields.
  */
 export type ScenarioBundlerContext = ScenarioRuntimeClientsContext;
+
+/**
+ * @deprecated Use {@link ScenarioBundlerContext}. Kept as a compatibility alias for older imports.
+ */
+export type BundlerContext = ScenarioBundlerContext;
 
 /**
  * Native token sentinel address used by bridge test-doubles to represent chain native balance mutations.

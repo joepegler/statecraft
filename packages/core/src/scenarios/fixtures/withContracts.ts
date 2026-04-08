@@ -22,12 +22,19 @@ export type ContractInjection = {
   afterSetCode?: (ctx: AfterSetCodeContext) => Promise<void>;
 };
 
+/** Contract map accepted by {@link withContracts}. */
+export type WithContractsMap = Record<string, ContractInjection>;
+
 /**
- * Contract injections for {@link withContracts}. Use `chain` to select `ctx.chains[chain]` (default `default`).
+ * Contract injections for {@link withContracts}. Supports both legacy and scoped forms:
+ * - legacy: `withContracts({ token: { ... } })`
+ * - scoped: `withContracts({ chain: "mainnet", contracts: { token: { ... } } })`
  */
-export type WithContractsConfig = {
+export type WithContractsConfig =
+  | WithContractsMap
+  | {
   chain?: string;
-  contracts: Record<string, ContractInjection>;
+  contracts: WithContractsMap;
 };
 
 type WithContractsIn = ScenarioRuntimeClientsContext;
@@ -40,13 +47,13 @@ type WithContractsOut = ScenarioRuntimeClientsContext;
 export function withContracts(
   config: WithContractsConfig,
 ): ScenarioStep<WithContractsIn, WithContractsOut> {
-  const chainKey = config.chain ?? "default";
+  const { chainKey, contracts: contractMap } = normalizeWithContractsConfig(config);
   return async (ctx, next) => {
     requireChainScopedRuntimeClients(ctx, chainKey);
     const ch = ctx.chains[chainKey]!;
     const contracts: ScenarioContracts = { ...(ch.contracts ?? {}) };
 
-    for (const [name, entry] of Object.entries(config.contracts)) {
+    for (const [name, entry] of Object.entries(contractMap)) {
       const bytecode = extractBytecode(
         entry.artifact.deployedBytecode,
         `${name}.deployedBytecode`,
@@ -86,5 +93,27 @@ export function withContracts(
         },
       },
     });
+  };
+}
+
+function normalizeWithContractsConfig(config: WithContractsConfig): { chainKey: string; contracts: WithContractsMap } {
+  const maybeScoped = config as {
+    chain?: string;
+    contracts?: unknown;
+  };
+  if (maybeScoped.contracts && typeof maybeScoped.contracts === "object") {
+    const maybeLegacyContractsKey = maybeScoped.contracts as { artifact?: unknown; address?: unknown };
+    const isLegacyContractsEntry = "artifact" in maybeLegacyContractsKey || "address" in maybeLegacyContractsKey;
+    if (!isLegacyContractsEntry) {
+      return {
+        chainKey: maybeScoped.chain ?? "default",
+        contracts: maybeScoped.contracts as WithContractsMap,
+      };
+    }
+  }
+
+  return {
+    chainKey: "default",
+    contracts: config as WithContractsMap,
   };
 }

@@ -36,8 +36,14 @@ export type WithFundedWalletConfig = {
  * Requires a prior runtime fixture for that chain.
  */
 export function withFundedWallet(
+  config: WithFundedWalletConfig & { chain?: undefined },
+): ScenarioStep<ScenarioRuntimeClientsContext, ScenarioFundedWalletContext<"default">>;
+export function withFundedWallet<C extends string>(
+  config: WithFundedWalletConfig & { chain: C },
+): ScenarioStep<ScenarioRuntimeClientsContext, ScenarioFundedWalletContext<C>>;
+export function withFundedWallet(
   config: WithFundedWalletConfig,
-): ScenarioStep<ScenarioRuntimeClientsContext, ScenarioFundedWalletContext> {
+): ScenarioStep<ScenarioRuntimeClientsContext, ScenarioRuntimeClientsContext> {
   const chainKey = config.chain ?? "default";
   return async (ctx, next) => {
     requireChainScopedRuntimeClients(ctx, chainKey);

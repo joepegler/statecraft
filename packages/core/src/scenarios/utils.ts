@@ -33,11 +33,11 @@ export function requireContext<
 /**
  * Asserts `ctx.chains[chainKey]` exists and has runtime + viem clients.
  */
-export function requireChainScopedRuntimeClients(
+export function requireChainScopedRuntimeClients<K extends string>(
   ctx: ScenarioContext,
-  chainKey: string,
+  chainKey: K,
 ): asserts ctx is ScenarioContext & {
-  chains: Record<string, ScenarioChainContext> & Record<typeof chainKey, ScenarioChainContext>;
+  chains: Record<string, ScenarioChainContext> & Record<K, ScenarioChainContext>;
 } {
   const ch = ctx.chains?.[chainKey];
   if (!ch?.runtime || !ch.publicClient || !ch.walletClient || !ch.testClient) {

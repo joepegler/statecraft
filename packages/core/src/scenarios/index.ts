@@ -17,6 +17,7 @@ export { NATIVE_TOKEN_ADDRESS } from "./types.js";
 export type {
   AfterDeployContext,
   AfterSetCodeContext,
+  BundlerContext,
   ContractArtifact,
   ScenarioBundlerContext,
   ScenarioBridge,
