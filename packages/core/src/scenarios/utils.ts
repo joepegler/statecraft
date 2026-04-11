@@ -1,5 +1,11 @@
-import type { ContractArtifact, ScenarioContext } from "./types.js";
+import type { ContractArtifact, ScenarioChainContext, ScenarioContext } from "./types.js";
 import type { Hex } from "viem";
+import { StatecraftError } from "./errors.js";
+
+export const SCENARIO_MAX_CHAINS = 2;
+export const BUNDLER_SUPPORTED_MODES = ["alto"] as const;
+export const PUBLIC_CLIENT_ALIAS_POLICIES = ["prefer-default-then-lexical", "lexical"] as const;
+export type PublicClientAliasPolicy = (typeof PUBLIC_CLIENT_ALIAS_POLICIES)[number];
 
 /**
  * Context with the listed keys required (non-undefined).
@@ -24,21 +30,114 @@ export function requireContext<
 >(ctx: Ctx, ...keys: K): RequireScenarioKeys<Ctx, K> {
   for (const key of keys) {
     if (ctx[key as keyof ScenarioContext] === undefined) {
-      throw new Error(`Scenario context is missing required key: ${String(key)}`);
+      throw new StatecraftError({
+        code: "SC_CONTEXT_MISSING",
+        reason: `Scenario context is missing required key: ${String(key)}`,
+        context: { key: String(key) },
+        suggestedAction: "Compose a fixture that populates this key before reading it.",
+      });
     }
   }
   return ctx as RequireScenarioKeys<Ctx, K>;
 }
 
-export function requireRuntimeClients(ctx: ScenarioContext): asserts ctx is ScenarioContext & {
-  runtime: NonNullable<ScenarioContext["runtime"]>;
-  publicClient: NonNullable<ScenarioContext["publicClient"]>;
-  walletClient: NonNullable<ScenarioContext["walletClient"]>;
-  testClient: NonNullable<ScenarioContext["testClient"]>;
+/**
+ * Asserts `ctx.chains[chainKey]` exists and has runtime + viem clients.
+ */
+export function requireChainScopedRuntimeClients<K extends string>(
+  ctx: ScenarioContext,
+  chainKey: K,
+): asserts ctx is ScenarioContext & {
+  chains: Record<string, ScenarioChainContext> & Record<K, ScenarioChainContext>;
 } {
-  if (!ctx.runtime || !ctx.publicClient || !ctx.walletClient || !ctx.testClient) {
-    throw new Error("Scenario context is missing runtime clients. Compose with withChain(...) or withFork(...) first.");
+  const ch = ctx.chains?.[chainKey];
+  if (!ch?.runtime || !ch.publicClient || !ch.walletClient || !ch.testClient) {
+    throw new StatecraftError({
+      code: "SC_CONTEXT_MISSING",
+      reason: `Scenario context is missing runtime clients for chain "${chainKey}".`,
+      context: { chainKey },
+      suggestedAction:
+        "Compose withChain(...), withFork(...), withExternalRuntime(...), or withMultiChain(...) before this step.",
+    });
   }
+}
+
+/**
+ * Derives deterministic top-level public client aliases from a chains map.
+ * Prefers `default` as primary when present; otherwise uses lexical key order.
+ */
+export function resolvePublicClientAliases(chains: Record<string, ScenarioChainContext>): {
+  publicClient: ScenarioChainContext["publicClient"];
+  altPublicClient: ScenarioChainContext["publicClient"] | undefined;
+}
+export function resolvePublicClientAliases(
+  chains: Record<string, ScenarioChainContext>,
+  policy: PublicClientAliasPolicy,
+): {
+  publicClient: ScenarioChainContext["publicClient"];
+  altPublicClient: ScenarioChainContext["publicClient"] | undefined;
+}
+export function resolvePublicClientAliases(
+  chains: Record<string, ScenarioChainContext>,
+  policy: PublicClientAliasPolicy = "prefer-default-then-lexical",
+): {
+  publicClient: ScenarioChainContext["publicClient"];
+  altPublicClient: ScenarioChainContext["publicClient"] | undefined;
+} {
+  const keys = Object.keys(chains);
+  if (keys.length > SCENARIO_MAX_CHAINS) {
+    throw new StatecraftError({
+      code: "SC_CONSTRAINT_VIOLATION",
+      reason: "Scenario context supports at most two chains.",
+      context: { chainCount: keys.length, maxChains: SCENARIO_MAX_CHAINS },
+      suggestedAction: "Split this test into multiple scenarios or choose no more than two chains.",
+    });
+  }
+
+  const sortedKeys = keys.sort();
+  const primaryKey =
+    policy === "prefer-default-then-lexical"
+      ? sortedKeys.includes("default")
+        ? "default"
+        : sortedKeys[0]
+      : sortedKeys[0];
+  if (!primaryKey) {
+    throw new StatecraftError({
+      code: "SC_CONTEXT_MISSING",
+      reason: "Scenario context is missing runtime clients.",
+      suggestedAction:
+        "Compose withChain(...), withFork(...), withExternalRuntime(...), or withMultiChain(...) first.",
+    });
+  }
+
+  const altKey = sortedKeys.find((key) => key !== primaryKey);
+  return {
+    publicClient: chains[primaryKey]!.publicClient,
+    altPublicClient: altKey ? chains[altKey]!.publicClient : undefined,
+  };
+}
+
+/**
+ * Enforces the scenario two-chain cap.
+ */
+export function assertTwoChainLimit(chains: Record<string, ScenarioChainContext>): void {
+  if (Object.keys(chains).length > SCENARIO_MAX_CHAINS) {
+    throw new StatecraftError({
+      code: "SC_CONSTRAINT_VIOLATION",
+      reason: "Scenario context supports at most two chains.",
+      context: { chainCount: Object.keys(chains).length, maxChains: SCENARIO_MAX_CHAINS },
+      suggestedAction: "Split this test into multiple scenarios or choose no more than two chains.",
+    });
+  }
+}
+
+export function describeScenarioConstraints() {
+  return {
+    maxChains: SCENARIO_MAX_CHAINS,
+    publicClientAliasPolicies: [...PUBLIC_CLIENT_ALIAS_POLICIES],
+    defaultAliasPolicy: "prefer-default-then-lexical" as const,
+    supportedBundlerModes: [...BUNDLER_SUPPORTED_MODES],
+  };
 }
 
 export function extractBytecode(value: ContractArtifact["bytecode"] | ContractArtifact["deployedBytecode"], label: string): Hex {
@@ -50,5 +149,10 @@ export function extractBytecode(value: ContractArtifact["bytecode"] | ContractAr
     return value.object;
   }
 
-  throw new Error(`${label} is missing usable bytecode (expected a 0x-prefixed hex string).`);
+  throw new StatecraftError({
+    code: "SC_PRECONDITION_FAILED",
+    reason: `${label} is missing usable bytecode (expected a 0x-prefixed hex string).`,
+    context: { label },
+    suggestedAction: "Provide bytecode as a 0x-prefixed hex string or artifact.object field.",
+  });
 }

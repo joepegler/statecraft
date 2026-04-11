@@ -3,12 +3,12 @@ title: withImpersonation
 description: Impersonate an existing account for scenario signing, with optional ETH top-up and automatic teardown.
 ---
 
-## `withImpersonation({ address[, balance, stopOnExit] })`
+## `withImpersonation({ address[, chain, balance, stopOnExit] })`
 
 **Test runners:** Examples use Vitest `test` and `expect`. `scenario(...)` returns an async function you can pass to any runner with a similar `test` callback (for example Jest or Node `node:test`).
 
 ### Why it is useful
-Use `withImpersonation()` when you need to execute transactions as an existing address (for example a forked holder or protocol actor) without private key access.
+Use `withImpersonation()` when a scenario depends on an existing on-chain actor (for example treasury signer, whale holder, or governance address) and you need to test behavior without owning that actor's private key.
 
 ### Example
 ```ts twoslash [index.ts]
@@ -21,7 +21,7 @@ import {
 } from "@st8craft/core";
 
 test(
-  "impersonated account can sign on fork",
+  "simulate protocol-admin actions without the real private key",
   scenario(
     withFork({
       rpcUrl: process.env.VITE_RPC_URL!,
@@ -31,9 +31,15 @@ test(
       address: "0x000000000000000000000000000000000000dead",
       balance: parseEther("1"),
     }),
-    async ({ wallet, walletClient, publicClient }) => {
-      expect(walletClient.account!.address).toBe(wallet);
-      const eth = await publicClient.getBalance({ address: wallet });
+    async ({ chains, publicClient }) => {
+      const admin = chains!.default.walletClient.account!.address;
+
+      // In production, this signer might be a multisig owner or protocol role.
+      // In this test, impersonation gives you that actor immediately so you can
+      // assert authorization or safety checks without key-management setup.
+      expect(admin).toBe("0x000000000000000000000000000000000000dEaD");
+
+      const eth = await publicClient.getBalance({ address: admin });
       expect(eth).toBe(parseEther("1"));
     },
   ),
@@ -43,16 +49,18 @@ test(
 ### Options
 | Option | Type | Required? | Meaning (units/semantics) | Used for / affects |
 |---|---|---|---|---|
-| `address` | `Address` | Yes | Existing account to impersonate. | Calls Anvil impersonation and becomes `walletClient.account` + `ctx.wallet`. |
+| `chain` | `string` | No | Key on `ctx.chains` (default `default`). | Selects which chain receives impersonation. |
+| `address` | `Address` | Yes | Existing account to impersonate. | Calls Anvil impersonation and becomes `walletClient.account` + `ctx.chains[chain].wallet`. |
 | `balance` | `bigint` | No | ETH balance to set in wei before test body runs. | Calls `testClient.setBalance` for `address`. |
 | `stopOnExit` | `boolean` | No | Whether to stop impersonation in fixture teardown. Defaults to `true`. | Controls `stopImpersonatingAccount` in `finally`. |
 
 ### Adds to context
+On `ctx.chains[chain]`:
 - `wallet`
 - `walletClient`
 
 ### Context requirements
-Requires runtime + clients from `withChain`, `withFork`, or `withExternalRuntime` so `ctx.testClient` exists.
+Requires runtime + clients on the target chain from `withChain`, `withFork`, `withExternalRuntime`, or `withMultiChain` so `ctx.chains[chain].testClient` exists.
 
 ### Lifecycle
 This fixture does not start or stop Anvil. It manages impersonation lifecycle for the configured address and, by default, stops impersonation when downstream steps finish.
@@ -60,3 +68,4 @@ This fixture does not start or stop Anvil. It manages impersonation lifecycle fo
 ### Notes and caveats
 - This behavior depends on Anvil test-client impersonation support.
 - If you set `stopOnExit: false`, impersonation remains active for the runtime until another step or test changes it.
+- Prefer forked runtimes for realistic impersonation scenarios where the actor's existing contract relationships or balances matter.

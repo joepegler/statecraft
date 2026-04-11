@@ -51,8 +51,8 @@ test(
     withFundedWallet({
       balance: 1_000_000_000_000_000_000n, // 1 ETH in wei
     }),
-    async ({ wallet, publicClient }) => {
-      const balance = await publicClient.getBalance({ address: wallet });
+    async ({ chains, publicClient }) => {
+      const balance = await publicClient.getBalance({ address: chains!.default.wallet! });
       expect(balance).toBe(1_000_000_000_000_000_000n);
     },
   ),
@@ -100,12 +100,12 @@ test(
       token: USDC_MAINNET,
       amount: 1_000_000n, // 1 USDC (6 decimals)
     }),
-    async ({ walletClient, publicClient }) => {
+    async ({ chains, publicClient }) => {
       const usdc = await publicClient.readContract({
         address: USDC_MAINNET,
         abi: erc20Abi,
         functionName: "balanceOf",
-        args: [walletClient.account.address],
+        args: [chains!.default.wallet!],
       });
 
       expect(usdc).toBe(1_000_000n);
@@ -117,13 +117,15 @@ test(
 ## Core Primitives
 
 - `scenario(...steps, testFn)`: composes setup steps into one async test function (examples wrap it with Vitest `test`).
-- `withChain()`: starts a fresh local Anvil runtime.
+- `withChain()`: starts a fresh local Anvil runtime (under `ctx.chains.default` unless `chainKey` is set).
 - `withFork({ rpcUrl, blockNumber })`: starts a pinned local fork for deterministic mainnet state.
-- `withFundedWallet({ balance, erc20? })`: creates and funds a test wallet.
+- `withMultiChain({ ... })`: starts or attaches multiple named chains on `ctx.chains`.
+- `publicClient` / `altPublicClient`: top-level convenience aliases for the primary chain and optional secondary chain.
+- `withFundedWallet({ balance, erc20?, chain? })`: creates and funds a test wallet on a chain entry.
 - `withErc20Balance({ token, amount })`: seeds ERC-20 balance on compatible local or forked nodes.
 - `withSnapshot()`: snapshots before inner steps and reverts in `finally`.
-- `withContracts(...)`: injects runtime bytecode at known addresses.
-- `withDeployments(...)`: performs real deployments with constructor semantics.
+- `withContracts({ contracts, chain? })`: injects runtime bytecode at known addresses on a chain entry.
+- `withDeployments({ deployments, chain? })`: performs real deployments with constructor semantics on a chain entry.
 
 ## Use It When / Skip It When
 
@@ -156,7 +158,8 @@ bun run test
 
 Included examples in `packages/examples/examples/scenarios.test.ts`:
 
-- fresh local chain plus funded wallet
+- fresh local chain plus funded wallet (`ctx.chains.default`)
+- two local chains via `withMultiChain` plus per-chain funded wallets
 - forked mainnet plus funded wallet plus real contract call
 - forked mainnet plus funded wallet plus USDC via `withFundedWallet.erc20` or `withErc20Balance`
 - runtime bytecode injection with `withContracts`

@@ -9,6 +9,8 @@ description: Inject runtime bytecode at fixed addresses with withContracts, or d
 
 These fixtures set up contract code at deterministic addresses on your scenario runtime.
 
+Pick `withContracts` when fixed addresses and setup speed matter most, or `withDeployments` when constructor args, deployment order, and deployment-time behavior are part of the test intent.
+
 ## Fixtures
 
 - [`withContracts({ ... })` (bytecode injection)](/fixtures/contracts/withContracts)

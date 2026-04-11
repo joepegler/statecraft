@@ -1,0 +1,121 @@
+---
+title: Core API (Agent)
+description: Machine-readable contracts for agent planning, preflight simulation, execution, constraints, and error handling.
+---
+
+# Core API (Agent)
+
+This page documents the most agent-relevant contracts in Statecraft: explicit constraints, structured errors, preflight APIs, and execution hooks.
+
+## Global constraints
+
+```ts
+import { describeScenarioConstraints } from "@st8craft/core";
+
+const constraints = describeScenarioConstraints();
+// {
+//   maxChains: 2,
+//   publicClientAliasPolicies: ["prefer-default-then-lexical", "lexical"],
+//   defaultAliasPolicy: "prefer-default-then-lexical",
+//   supportedBundlerModes: ["alto"],
+// }
+```
+
+## Structured errors
+
+Statecraft throws `StatecraftError` for machine-branchable failures.
+
+```ts
+type StatecraftError = {
+  name: "StatecraftError";
+  code: string;
+  reason: string;
+  context: Record<string, unknown>;
+  suggestedAction?: string;
+  cause?: unknown;
+};
+```
+
+### Common error codes
+
+| Code | Meaning | Typical next action |
+| --- | --- | --- |
+| `SC_CONTEXT_MISSING` | Required context key/chain client not present | Reorder fixtures so prerequisites run first |
+| `SC_PRECONDITION_FAILED` | Invalid argument or unmet runtime precondition | Fix config/inputs and retry |
+| `SC_CONSTRAINT_VIOLATION` | Violates SDK constraints (for example >2 chains) | Split workflow or use valid configuration |
+| `SC_RUNTIME_START_TIMEOUT` | Runtime did not become JSON-RPC ready | Retry and inspect startup diagnostics |
+| `SC_RUNTIME_START_FAILED` | Runtime process failed during startup | Validate process/env and config |
+| `SC_BUNDLER_START_FAILED` | Bundler startup or readiness probe failed | Inspect Alto install/config and retry |
+| `SC_BUNDLER_UNSUPPORTED_MODE` | Bundler mode is unsupported | Use `mode: "alto"` |
+
+## Action planning + preflight
+
+Use action primitives to separate plan/simulate/execute.
+
+```ts
+import {
+  planCall,
+  simulateCall,
+  planDeployment,
+  simulateDeployment,
+  executePlan,
+  summarizePreflight,
+  assertPreflight,
+} from "@st8craft/core";
+```
+
+### Preflight result contract
+
+```ts
+type ActionPreflight = {
+  canExecute: boolean;
+  reasons: Array<{
+    code: string;
+    reason: string;
+    context?: Record<string, unknown>;
+  }>;
+  assumptions: string[];
+  estimatedEffects: Record<string, unknown>;
+};
+```
+
+Recommended flow:
+
+1. Build plan (`planCall` / `planDeployment`)
+2. Simulate (`simulateCall` / `simulateDeployment`)
+3. Gate mutation with `assertPreflight(result)` or your own policy
+4. Execute (`executePlan`)
+
+## Scenario tracing hooks
+
+`scenario(...)` accepts optional run options:
+
+```ts
+scenario(
+  {
+    options: {
+      onStepStart: (event) => {},
+      onStepSuccess: (event) => {},
+      onStepFailure: (event) => {},
+      onCleanup: (event) => {},
+    },
+  },
+  // ...withX steps,
+  async (ctx) => {},
+);
+```
+
+Event payloads expose:
+
+- step index + label
+- duration
+- context delta keys
+- normalized `StatecraftError` on failures
+
+## Retry and idempotency
+
+- `bridge.execute(...)` accepts optional `idempotencyKey`.
+- Reusing the same key with the same payload returns cached execution output.
+- Reusing the same key with a different payload throws `SC_CONSTRAINT_VIOLATION`.
+
+For nonce-sensitive operations (raw tx/deployments), use external nonce coordination if retries are automated.

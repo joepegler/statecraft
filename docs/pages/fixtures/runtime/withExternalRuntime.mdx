@@ -3,12 +3,12 @@ title: withExternalRuntime
 description: Attach a caller-owned runtime handle and wire viem clients, without starting or stopping Anvil.
 ---
 
-## `withExternalRuntime({ runtime, runtimeMode?, clients? })`
+## `withExternalRuntime({ runtime, runtimeMode?, clients?, chainKey? })`
 
 **Test runners:** Examples use Vitest `test` and `expect`. `scenario(...)` returns an async function you can pass to any runner with a similar `test` callback (for example Jest or Node `node:test`).
 
 ### Why it is useful
-Use `withExternalRuntime()` when your test suite (not the scenario) owns the Anvil lifecycle, so you can reuse one running runtime across many scenarios.
+Use `withExternalRuntime()` when your test suite (not the scenario) owns runtime lifecycle and you want to reuse one running node across many tests. This matches real suites that keep one process warm for speed, then choose per test whether state should be shared or rolled back.
 
 This enables two important patterns:
 
@@ -43,12 +43,12 @@ describe.sequential("external runtime lifecycle owned by the test file", () => {
   });
 
   test(
-    "builds shared state for later tests",
+    "stores a suite-level checkpoint for later assertions",
     scenario(
       withExternalRuntime({ runtime: handle }),
-      async ({ publicClient, testClient }) => {
+      async ({ chains, publicClient }) => {
         const start = await publicClient.getBlockNumber();
-        await testClient.mine({ blocks: 2 });
+        await chains!.default.testClient.mine({ blocks: 2 });
         sharedBlock = await publicClient.getBlockNumber();
         expect(sharedBlock).toBe(start + 2n);
       },
@@ -56,7 +56,7 @@ describe.sequential("external runtime lifecycle owned by the test file", () => {
   );
 
   test(
-    "depends on the previous test's state",
+    "reuses shared chain state without extra setup",
     scenario(
       withExternalRuntime({ runtime: handle }),
       async ({ publicClient }) => {
@@ -66,20 +66,20 @@ describe.sequential("external runtime lifecycle owned by the test file", () => {
   );
 
   test(
-    "runs isolated work with snapshot",
+    "executes one-off isolated work using snapshot",
     scenario(
       withExternalRuntime({ runtime: handle }),
       withSnapshot(),
-      async ({ publicClient, testClient }) => {
+      async ({ chains, publicClient }) => {
         const before = await publicClient.getBlockNumber();
-        await testClient.mine({ blocks: 5 });
+        await chains!.default.testClient.mine({ blocks: 5 });
         expect(await publicClient.getBlockNumber()).toBe(before + 5n);
       },
     ),
   );
 
   test(
-    "proves isolated test did not leak shared state",
+    "confirms isolated work did not leak into shared flow",
     scenario(
       withExternalRuntime({ runtime: handle }),
       async ({ publicClient }) => {
@@ -93,17 +93,23 @@ describe.sequential("external runtime lifecycle owned by the test file", () => {
 ### Options
 | Option | Type | Required? | Meaning (units/semantics) | Used for / affects |
 |---|---|---|---|---|
+| `chainKey` | `string` | No | Key on `ctx.chains` (default `default`). | Namespaces clients when composing multiple chains. |
 | `runtime` | `RuntimeHandle` | Yes | Live runtime handle created by `startRuntime(...)`. | Provides the RPC endpoint and runtime identity used by the scenario clients. |
 | `runtimeMode` | `"chain" \| "fork"` | No | Declares whether the attached runtime handle is chain or fork mode. Defaults to `"chain"`. | Enables mode-sensitive fixtures (for example `withBundler`, which requires fork mode). |
 | `clients` | `CreateClientsOptions` | No | Optional client wiring overrides for chain identity and signer key. | Selects viem chain id (`chainId`) and signer private key (`privateKey`). |
 
 ### Adds to context
+Under `ctx.chains[chainKey]` (default key `default`):
 - `runtime`
 - `runtimeMode` (defaults to `"chain"` when omitted)
 - `chain`
 - `publicClient`
 - `walletClient`
 - `testClient`
+
+Top-level convenience aliases:
+- `publicClient` (primary chain client)
+- `altPublicClient` (secondary chain client when one exists)
 
 ### Context requirements
 None at the scenario level, but you must pass a live `runtime` handle.
@@ -114,6 +120,7 @@ External lifecycle, the fixture never starts or stops Anvil.
 ### Notes and caveats
 - Add `withSnapshot()` when you want per-test rollback while reusing one external runtime handle.
 - Skip `withSnapshot()` when you intentionally want cumulative state across sequential tests in one file or `describe`.
+- In production terms: the runtime process is shared, but Statecraft still lets each scenario declare whether it behaves like an isolated unit test or a progressive integration checkpoint.
 - Mixing both patterns in one `describe` lets you model realistic flows, cumulative checkpoints, and one-off isolated assertions without paying runtime startup cost for every test.
 - A common performance pattern is one runtime handle per test file (`beforeAll` and `afterAll`). This keeps state local to that file and still lets the test runner run different files in parallel, which can significantly reduce total suite time.
 

@@ -7,8 +7,18 @@ import { withExternalRuntime } from "./fixtures/withExternalRuntime.js";
 import { withFundedWallet } from "./fixtures/withFundedWallet.js";
 import { withErc20Balance } from "./fixtures/withErc20Balance.js";
 import { withBundler } from "./fixtures/withBundler.js";
-import type { ScenarioFundedWalletContext, ScenarioRuntimeClientsContext, ScenarioStep, ScenarioTest } from "./types.js";
-import type { ScenarioBundlerContext } from "./types.js";
+import { withMultiChain } from "./fixtures/withMultiChain.js";
+import { withBridge } from "./fixtures/withBridge.js";
+import { withDeployments } from "./fixtures/withDeployments.js";
+import type {
+  ScenarioDeploymentsOnChainContext,
+  ScenarioFundedWalletContext,
+  ScenarioRuntimeClientsContext,
+  ScenarioStep,
+  ScenarioTest,
+  ScenarioWalletOnChainContext,
+} from "./types.js";
+import { NATIVE_TOKEN_ADDRESS, type ScenarioBridgeContext, type ScenarioBundlerContext } from "./types.js";
 
 const USDC_MAINNET = "0xA0b86991c6218b36c1d19D4a2e9Eb0ce3606eB48" as const;
 
@@ -16,6 +26,10 @@ type StepOut<S> = S extends ScenarioStep<any, infer O> ? O : never;
 
 test("withChain output type is runtime clients context", () => {
   expectTypeOf<StepOut<ReturnType<typeof withChain>>>().toEqualTypeOf<ScenarioRuntimeClientsContext>();
+});
+
+test("withMultiChain output type is runtime clients context", () => {
+  expectTypeOf<StepOut<ReturnType<typeof withMultiChain>>>().toEqualTypeOf<ScenarioRuntimeClientsContext>();
 });
 
 test("withExternalRuntime output type is runtime clients context", () => {
@@ -69,10 +83,26 @@ test("scenario(chain, erc20 with `to`, test) accepts ScenarioTest<ScenarioRuntim
   ).toEqualTypeOf<() => Promise<void>>();
 });
 
+test("scenario(chain, erc20 without `to`, test) is rejected without funded wallet fixture", () => {
+  const t: ScenarioTest<ScenarioRuntimeClientsContext> = async (_ctx) => {};
+  // @ts-expect-error missing funded wallet context when `to` is omitted
+  scenario(withChain(), withErc20Balance({ token: USDC_MAINNET, amount: 1n }), t);
+});
+
 const ENTRYPOINT_V07 = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789" as const;
 
 test("withBundler output type is scenario bundler context", () => {
   expectTypeOf<StepOut<ReturnType<typeof withBundler>>>().toEqualTypeOf<ScenarioBundlerContext>();
+});
+
+test("withBridge output type is scenario bridge context", () => {
+  expectTypeOf<
+    StepOut<
+      ReturnType<
+        typeof withBridge<ScenarioRuntimeClientsContext>
+      >
+    >
+  >().toEqualTypeOf<ScenarioBridgeContext>();
 });
 
 test("scenario(fork, bundler, test) accepts ScenarioTest<ScenarioBundlerContext>", () => {
@@ -86,4 +116,64 @@ test("scenario(fork, bundler, test) accepts ScenarioTest<ScenarioBundlerContext>
       t,
     ),
   ).toEqualTypeOf<() => Promise<void>>();
+});
+
+test("scenario(multichain, bridge, test) accepts ScenarioTest<ScenarioBridgeContext>", () => {
+  const t: ScenarioTest<ScenarioBridgeContext> = async (_ctx) => {};
+  expectTypeOf(
+    scenario(
+      withMultiChain({
+        src: { type: "chain", chainId: 31337 },
+        dest: { type: "chain", chainId: 31338 },
+      }),
+      withBridge({
+        srcChain: "src",
+        destChain: "dest",
+        fromToken: NATIVE_TOKEN_ADDRESS,
+        toToken: NATIVE_TOKEN_ADDRESS,
+      }),
+      t,
+    ),
+  ).toEqualTypeOf<() => Promise<void>>();
+});
+
+test("scenario(multichain, funded src, funded dest, test) accumulates wallet context on both chains", () => {
+  type SrcWallet = ScenarioWalletOnChainContext<ScenarioRuntimeClientsContext, "src">;
+  type SrcDestWallets = ScenarioWalletOnChainContext<SrcWallet, "dest">;
+  const t: ScenarioTest<SrcDestWallets> = async (_ctx) => {};
+
+  expectTypeOf(
+    scenario(
+      withMultiChain({
+        src: { type: "chain", chainId: 31337 },
+        dest: { type: "chain", chainId: 31338 },
+      }),
+      withFundedWallet({ chain: "src", balance: 1n }),
+      withFundedWallet({ chain: "dest", balance: 1n }),
+      t,
+    ),
+  ).toEqualTypeOf<() => Promise<void>>();
+});
+
+test("scenario(multichain, funded src, erc20 on src without to, test) keeps chain-specific funded requirements", () => {
+  type SrcWallet = ScenarioWalletOnChainContext<ScenarioRuntimeClientsContext, "src">;
+  const t: ScenarioTest<SrcWallet> = async (_ctx) => {};
+
+  expectTypeOf(
+    scenario(
+      withMultiChain({
+        src: { type: "chain", chainId: 31337 },
+        dest: { type: "chain", chainId: 31338 },
+      }),
+      withFundedWallet({ chain: "src", balance: 1n }),
+      withErc20Balance({ chain: "src", token: USDC_MAINNET, amount: 1n }),
+      t,
+    ),
+  ).toEqualTypeOf<() => Promise<void>>();
+});
+
+test("withDeployments output type marks default chain deployments as present", () => {
+  expectTypeOf<StepOut<ReturnType<typeof withDeployments<ScenarioRuntimeClientsContext>>>>().toEqualTypeOf<
+    ScenarioDeploymentsOnChainContext<ScenarioRuntimeClientsContext, "default">
+  >();
 });

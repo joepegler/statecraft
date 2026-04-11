@@ -1,12 +1,12 @@
 import { createWalletClient, http, type Address, type Hex } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import type {
-  ScenarioFundedWalletContext,
   ScenarioRuntimeClientsContext,
   ScenarioStep,
+  ScenarioWalletOnChainContext,
 } from "../types.js";
 import { dealErc20Balance } from "../internal/dealErc20Balance.js";
-import { requireRuntimeClients } from "../utils.js";
+import { requireChainScopedRuntimeClients } from "../utils.js";
 
 /** One ERC-20 balance to seed for the funded wallet (after ETH funding). */
 export type WithFundedWalletErc20Balance = {
@@ -18,6 +18,8 @@ export type WithFundedWalletErc20Balance = {
 
 /** Options for creating (or reusing) a test account and funding it on anvil. */
 export type WithFundedWalletConfig = {
+  /** Key on `ctx.chains` to fund (default `default`). */
+  chain?: string;
   /** Balance set via `testClient.setBalance` (wei). */
   balance: bigint;
   /** When set, uses this key; otherwise generates a new private key. */
@@ -30,39 +32,61 @@ export type WithFundedWalletConfig = {
 };
 
 /**
- * Middleware: ensures a funded account, sets `ctx.wallet`, and replaces `walletClient` with that account.
- * Requires a prior `withChain` / `withFork` so `testClient` and chain RPC are available.
+ * Middleware: ensures a funded account on `ctx.chains[chain]`, sets `wallet` on that chain entry, and replaces `walletClient`.
+ * Requires a prior runtime fixture for that chain.
  */
 export function withFundedWallet(
+  config: WithFundedWalletConfig & { chain?: undefined },
+): ScenarioStep<
+  ScenarioRuntimeClientsContext,
+  ScenarioWalletOnChainContext<ScenarioRuntimeClientsContext, "default">
+>;
+export function withFundedWallet<Ctx extends ScenarioRuntimeClientsContext, C extends string>(
+  config: WithFundedWalletConfig & { chain: C },
+): ScenarioStep<Ctx, ScenarioWalletOnChainContext<Ctx, C>>;
+export function withFundedWallet<Ctx extends ScenarioRuntimeClientsContext>(
+  config: WithFundedWalletConfig & { chain?: undefined },
+): ScenarioStep<Ctx, ScenarioWalletOnChainContext<Ctx, "default">>;
+export function withFundedWallet(
   config: WithFundedWalletConfig,
-): ScenarioStep<ScenarioRuntimeClientsContext, ScenarioFundedWalletContext> {
-  return async (ctx, next) => {
-    requireRuntimeClients(ctx);
+): ScenarioStep<any, any> {
+  const chainKey = config.chain ?? "default";
+  return async (
+    ctx: ScenarioRuntimeClientsContext,
+    next: (ctx: ScenarioRuntimeClientsContext) => Promise<void>,
+  ) => {
+    requireChainScopedRuntimeClients(ctx, chainKey);
+    const ch = ctx.chains[chainKey]!;
 
     const privateKey = config.privateKey ?? generatePrivateKey();
     const account = privateKeyToAccount(privateKey);
 
-    await ctx.testClient.setBalance({
+    await ch.testClient.setBalance({
       address: account.address,
       value: config.balance,
     });
 
     const walletClient = createWalletClient({
       account,
-      chain: ctx.publicClient.chain,
-      transport: http(ctx.runtime.rpcUrl),
+      chain: ch.publicClient.chain,
+      transport: http(ch.runtime.rpcUrl),
     });
 
-    const nextCtx: ScenarioFundedWalletContext = {
-      ...ctx,
+    const updatedChain = {
+      ...ch,
       wallet: account.address,
       walletClient,
+    };
+
+    const nextChains = {
+      ...ctx.chains,
+      [chainKey]: updatedChain,
     };
 
     if (config.erc20?.length) {
       for (const entry of config.erc20) {
         await dealErc20Balance({
-          testClient: nextCtx.testClient,
+          testClient: updatedChain.testClient,
           token: entry.token,
           recipient: account.address,
           amount: entry.amount,
@@ -70,6 +94,9 @@ export function withFundedWallet(
       }
     }
 
-    await next(nextCtx);
+    await next({
+      ...ctx,
+      chains: nextChains,
+    });
   };
 }

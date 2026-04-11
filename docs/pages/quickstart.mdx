@@ -80,9 +80,9 @@ test(
   scenario(
     withChain(),
     withFundedWallet({ balance: parseEther("1") }),
-    async ({ publicClient, walletClient }) => {
+    async ({ chains, publicClient }) => {
       const balance = await publicClient.getBalance({
-        address: walletClient.account!.address,
+        address: chains!.default.walletClient.account!.address,
       });
 
       expect(balance).toBe(parseEther("1"));
@@ -101,9 +101,15 @@ bunx vitest run tests/quickstart.test.ts
 
 ## What happened (and what success looks like)
 
-This test starts a fresh local Anvil chain, funds a scenario wallet with `withFundedWallet`, reads the wallet balance with `publicClient.getBalance`, and asserts it.
+This test starts a fresh local Anvil chain, funds a scenario wallet with `withFundedWallet` on `ctx.chains.default`, reads the wallet balance with `publicClient.getBalance`, and asserts it.
 
 Success looks like a passing Vitest run for `funded wallet on local chain`.
+
+This quickstart stays intentionally small so you can verify your toolchain first. After it passes, move to scenario-style examples that model production-adjacent flows without full infra setup:
+- [withBridge](/fixtures/runtime/withBridge)
+- [withImpersonation](/fixtures/wallets/withImpersonation)
+- [withDeployments](/fixtures/contracts/withDeployments)
+- [withSnapshot](/fixtures/isolation/withSnapshot)
 
 ## Troubleshooting
 
@@ -128,5 +134,6 @@ withFork({
 
 Keep `blockNumber` pinned to a bigint literal. Then continue with:
 - [Overview](/overview)
+- [Core API (Agent)](/core-api-agent)
 - [withFork](/fixtures/runtime/withFork)
 - [Wallet fixtures](/fixtures/wallets)

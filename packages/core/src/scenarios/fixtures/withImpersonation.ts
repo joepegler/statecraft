@@ -1,13 +1,15 @@
 import { createWalletClient, http, type Address } from "viem";
 import type {
-  ScenarioFundedWalletContext,
   ScenarioRuntimeClientsContext,
   ScenarioStep,
+  ScenarioWalletOnChainContext,
 } from "../types.js";
-import { requireRuntimeClients } from "../utils.js";
+import { requireChainScopedRuntimeClients } from "../utils.js";
 
 /** Options for impersonating an existing on-chain account via Anvil test client controls. */
 export type withImpersonationConfig = {
+  /** Key on `ctx.chains` (default `default`). */
+  chain?: string;
   /** Address to impersonate for transaction signing in this scenario step. */
   address: Address;
   /** Optional ETH balance to set in wei before forwarding context. */
@@ -20,20 +22,37 @@ export type withImpersonationConfig = {
 };
 
 /**
- * Middleware: impersonates `config.address`, swaps in a wallet client for that account,
+ * Middleware: impersonates `config.address` on `ctx.chains[chain]`, swaps in a wallet client for that account,
  * runs `next`, then stops impersonation by default.
- * Requires prior runtime fixtures (`withChain`, `withFork`, or `withExternalRuntime`).
+ * Requires prior runtime fixtures for that chain (`withChain`, `withFork`, `withExternalRuntime`, or `withMultiChain`).
  */
 export function withImpersonation(
+  config: withImpersonationConfig & { chain?: undefined },
+): ScenarioStep<
+  ScenarioRuntimeClientsContext,
+  ScenarioWalletOnChainContext<ScenarioRuntimeClientsContext, "default">
+>;
+export function withImpersonation<Ctx extends ScenarioRuntimeClientsContext, C extends string>(
+  config: withImpersonationConfig & { chain: C },
+): ScenarioStep<Ctx, ScenarioWalletOnChainContext<Ctx, C>>;
+export function withImpersonation<Ctx extends ScenarioRuntimeClientsContext>(
+  config: withImpersonationConfig & { chain?: undefined },
+): ScenarioStep<Ctx, ScenarioWalletOnChainContext<Ctx, "default">>;
+export function withImpersonation(
   config: withImpersonationConfig,
-): ScenarioStep<ScenarioRuntimeClientsContext, ScenarioFundedWalletContext> {
-  return async (ctx, next) => {
-    requireRuntimeClients(ctx);
+): ScenarioStep<any, any> {
+  const chainKey = config.chain ?? "default";
+  return async (
+    ctx: ScenarioRuntimeClientsContext,
+    next: (ctx: ScenarioRuntimeClientsContext) => Promise<void>,
+  ) => {
+    requireChainScopedRuntimeClients(ctx, chainKey);
+    const ch = ctx.chains[chainKey]!;
 
-    await ctx.testClient.impersonateAccount({ address: config.address });
+    await ch.testClient.impersonateAccount({ address: config.address });
 
     if (config.balance !== undefined) {
-      await ctx.testClient.setBalance({
+      await ch.testClient.setBalance({
         address: config.address,
         value: config.balance,
       });
@@ -41,19 +60,27 @@ export function withImpersonation(
 
     const walletClient = createWalletClient({
       account: config.address,
-      chain: ctx.publicClient.chain,
-      transport: http(ctx.runtime.rpcUrl),
+      chain: ch.publicClient.chain,
+      transport: http(ch.runtime.rpcUrl),
     });
+
+    const nextChains = {
+      ...ctx.chains,
+      [chainKey]: {
+        ...ch,
+        wallet: config.address,
+        walletClient,
+      },
+    };
 
     try {
       await next({
         ...ctx,
-        wallet: config.address,
-        walletClient,
+        chains: nextChains,
       });
     } finally {
       if (config.stopOnExit !== false) {
-        await ctx.testClient.stopImpersonatingAccount({
+        await ch.testClient.stopImpersonatingAccount({
           address: config.address,
         });
       }

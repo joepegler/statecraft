@@ -3,12 +3,12 @@ title: withContracts
 description: Inject runtime bytecode at fixed addresses (test-only) with optional typed contract handles.
 ---
 
-## `withContracts({ ... })`
+## `withContracts({ contracts, chain? })`
 
 **Test runners:** Examples use Vitest `test` and `expect`. `scenario(...)` returns an async function you can pass to any runner with a similar `test` callback (for example Jest or Node `node:test`).
 
 ### Why it is useful
-Use `withContracts()` when you want fast, deterministic contract setup at known addresses, without running constructors or worrying about deployment ordering.
+Use `withContracts()` when address determinism matters more than constructor semantics, such as patching a dependency contract at a known address or stubbing integration points in a larger workflow.
 
 ### Example
 :::code-group
@@ -20,17 +20,22 @@ import { answerArtifact } from "./config.js";
 const ANSWER_ADDRESS = "0x1000000000000000000000000000000000000001";
 
 test(
-  "runtime bytecode is installed and contract handle exists",
+  "inject dependency bytecode at a fixed address for integration tests",
   scenario(
     withChain(),
     withContracts({
-      answer: {
-        artifact: answerArtifact,
-        address: ANSWER_ADDRESS,
+      contracts: {
+        answer: {
+          artifact: answerArtifact,
+          address: ANSWER_ADDRESS,
+        },
       },
     }),
-    async ({ contracts }) => {
-      expect(contracts?.answer).toBeTruthy();
+    async ({ chains }) => {
+      // In production, this dependency would come from a deployed contract.
+      // In this test, fixed-address injection keeps setup deterministic and
+      // lets your business logic tests skip full deploy pipelines.
+      expect(chains?.default.contracts?.answer).toBeTruthy();
     },
   ),
 );
@@ -57,20 +62,22 @@ export const answerArtifact = {
 ### Options
 | Option | Type | Required? | Meaning (units/semantics) | Used for / affects |
 |---|---|---|---|---|
-| `name` (record key) | `string` | Yes | Contract name you choose as the key in your config object. | Becomes `ctx.contracts[name]` for later steps. |
+| `chain` | `string` | No | Key on `ctx.chains` (default `default`). | Selects which chain receives bytecode and contract handles. |
+| `contracts` | `Record<string, ContractInjection>` | Yes | Named injection specs. | Keys become `ctx.chains[chain].contracts[name]`. |
+| `name` (record key) | `string` | Yes | Contract name you choose as the key under `contracts`. | Becomes the handle key for later steps. |
 | `artifact` | `ContractArtifact` | Yes | Supplies runtime bytecode via `deployedBytecode` (and optionally `abi` for typed handles). | Determines what `testClient.setCode` installs, and whether a typed contract handle is produced. |
 | `address` | `Hex` | Yes | Address where the runtime bytecode is installed. | Controls the fixed address used for subsequent calls/reads. |
 | `afterSetCode` | `(ctx) => Promise` | No | Optional async hook called after `setCode`. | Lets you seed extra storage or perform node-only setup for this contract. |
 
 ### Adds to context
-- `contracts` (merged across entries and steps)
+- `ctx.chains[chain].contracts` (merged across entries and steps)
 
 ### Context requirements
-- Requires runtime + clients from `withChain`, `withFork`, or `withExternalRuntime` (for `ctx.testClient`).
+- Requires runtime + clients on the target chain from `withChain`, `withFork`, `withExternalRuntime`, or `withMultiChain` (for `ctx.chains[chain].testClient`).
 
 ### Lifecycle
 Managed middleware that installs bytecode, then forwards to `next`.
 
 ### Notes and caveats
 Use `withContracts()` for injecting known runtime bytecode at known addresses. It is optimized for setup speed and deterministic addressing, not for constructor semantics.
-
+- If constructor args, init routines, or deployment ordering are the thing under test, use `withDeployments()` instead.

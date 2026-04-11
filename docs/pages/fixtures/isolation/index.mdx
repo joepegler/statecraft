@@ -9,6 +9,8 @@ description: Isolate side effects inside a scenario by snapshotting and revertin
 
 Isolation fixtures help you keep tests independent even when you reuse a runtime across multiple scenarios.
 
+Use `withSnapshot()` when a scenario mutates state but your suite reuses a runtime handle and should not leak side effects into later tests.
+
 ## Fixtures
 
 - [`withSnapshot()`](/fixtures/isolation/withSnapshot)

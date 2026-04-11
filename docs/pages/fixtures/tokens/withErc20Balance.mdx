@@ -3,12 +3,12 @@ title: withErc20Balance
 description: Seed an ERC-20 balance for a recipient in local/forked test state.
 ---
 
-## `withErc20Balance({ token, amount[, to] })`
+## `withErc20Balance({ token, amount[, chain, to] })`
 
 **Test runners:** Examples use Vitest `test` and `expect`. `scenario(...)` returns an async function you can pass to any runner with a similar `test` callback (for example Jest or Node `node:test`).
 
 ### Why it is useful
-Use `withErc20Balance()` to seed ERC-20 balances directly in test state, so you can exercise token transfers and contract logic without writing per-test minting or impersonation boilerplate.
+Use `withErc20Balance()` when the scenario needs token balances as preconditions, but token minting mechanics are not the behavior under test. It lets you start from "user has X tokens" and focus on business rules like spending limits, routing, or settlement checks.
 
 ### Example
 ```ts twoslash [index.ts]
@@ -19,7 +19,7 @@ import { scenario, withChain, withFundedWallet, withErc20Balance } from "@st8cra
 const USDC = "0xA0b86991c6218b36c1d19D4a2e9Eb0ce3606eB48";
 
 test(
-  "funded wallet has USDC seeded",
+  "seed token balance to test checkout rules quickly",
   scenario(
     withChain(),
     withFundedWallet({ balance: 1n }),
@@ -27,15 +27,29 @@ test(
       token: USDC,
       amount: 1_000_000n,
     }),
-    async ({ publicClient, walletClient }) => {
+    async ({ chains, publicClient }) => {
+      const buyer = chains!.default.walletClient.account!.address;
+      const cartTotal = 500_000n;
+
+      // In production, you might mint on a local token, impersonate a whale,
+      // or call custom faucet logic. In this test, we seed balance state so
+      // the body can jump straight to purchase constraints.
       expect(
         await publicClient.readContract({
           address: USDC,
           abi: erc20Abi,
           functionName: "balanceOf",
-          args: [walletClient.account!.address],
+          args: [buyer],
         }),
       ).toBe(1_000_000n);
+      expect(
+        (await publicClient.readContract({
+          address: USDC,
+          abi: erc20Abi,
+          functionName: "balanceOf",
+          args: [buyer],
+        })) >= cartTotal,
+      ).toBe(true);
     },
   ),
 );
@@ -44,20 +58,21 @@ test(
 ### Options
 | Option | Type | Required? | Meaning (units/semantics) | Used for / affects |
 |---|---|---|---|---|
+| `chain` | `string` | No | Key on `ctx.chains` (default `default`). | Selects which chain receives the balance write. |
 | `token` | `Address` | Yes | ERC-20 token contract address. | Determines which token storage is rewritten. |
 | `amount` | `bigint` | Yes | Token raw units balance (for example, from `parseUnits`). | Sets the recipient's balance in token raw units. |
-| `to` | `Address` | No | Recipient address to set. When omitted, uses `ctx.wallet`. | Chooses the account whose balance state is rewritten. |
+| `to` | `Address` | No | Recipient address to set. When omitted, uses `ctx.chains[chain].wallet`. | Chooses the account whose balance state is rewritten. |
 
 ### Adds to context
-None; this fixture mainly mutates node state before forwarding to the callback.
+None; this fixture mainly mutates node state before forwarding to the callback (it may refresh `wallet` on the chain entry when `to` is omitted).
 
 ### Context requirements
-- Requires runtime + clients from `withChain`, `withFork`, or `withExternalRuntime` so `ctx.testClient` exists.
-- If `to` is omitted, `ctx.wallet` must already be set (typically by `withFundedWallet`).
+- Requires runtime + clients on the target chain from `withChain`, `withFork`, `withExternalRuntime`, or `withMultiChain` so `ctx.chains[chain].testClient` exists.
+- If `to` is omitted, `ctx.chains[chain].wallet` must already be set (typically by `withFundedWallet`).
 
 ### Lifecycle
 Managed middleware that writes test-only token state on entry, then forwards to `next`.
 
 ### Notes and caveats
 This is test-only state manipulation: it rewrites token balance state on the node and is not a production mint path. It may fail for non-standard token implementations (for example rebasing tokens or unusual storage layouts).
-
+- On a fresh local chain, using a mainnet token address in docs is a stand-in for "contract exists in test state"; use `withFork()` when you need true historical mainnet storage and behavior.

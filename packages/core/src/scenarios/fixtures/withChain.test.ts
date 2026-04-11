@@ -32,12 +32,15 @@ describe("withChain", () => {
     const step = withChain({ chainId: 31337, key: "suite" });
 
     const next = vi.fn(async (nextCtx: any) => {
-      expect(nextCtx.runtime).toBe(runtime);
-      expect(nextCtx.runtimeMode).toBe("chain");
-      expect(nextCtx.chain).toBe(clients.publicClient.chain);
+      const ch = nextCtx.chains.default;
+      expect(ch.runtime).toBe(runtime);
+      expect(ch.runtimeMode).toBe("chain");
+      expect(ch.chain).toBe(clients.publicClient.chain);
+      expect(ch.publicClient).toBe(clients.publicClient);
+      expect(ch.walletClient).toBe(clients.walletClient);
+      expect(ch.testClient).toBe(clients.testClient);
       expect(nextCtx.publicClient).toBe(clients.publicClient);
-      expect(nextCtx.walletClient).toBe(clients.walletClient);
-      expect(nextCtx.testClient).toBe(clients.testClient);
+      expect(nextCtx.altPublicClient).toBeUndefined();
       expect(nextCtx.keep).toBe("me");
     });
 

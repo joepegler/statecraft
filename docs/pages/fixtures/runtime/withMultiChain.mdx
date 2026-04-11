@@ -1,0 +1,87 @@
+---
+title: withMultiChain
+description: Start or attach multiple Anvil runtimes and expose them as named entries on ctx.chains.
+---
+
+## withMultiChain(config, options?)
+
+**Test runners:** Examples use Vitest `test` and `expect`. `scenario(...)` returns an async function you can pass to any runner with a similar `test` callback (for example Jest or Node `node:test`).
+
+### Why it is useful
+Use `withMultiChain` when one test needs more than one isolated EVM context, such as an L1 plus L2 flow, a source and destination bridge path, or two pinned forks. Each key in `config` becomes `ctx.chains.<key>` with its own `runtime`, `publicClient`, `walletClient`, and `testClient`, so you can describe the orchestration once instead of hand-wiring multiple runtimes in hooks.
+
+### Example
+```ts twoslash [index.ts]
+import { test, expect } from "vitest";
+import { parseEther } from "viem";
+import { scenario, withMultiChain, withFundedWallet } from "@st8craft/core";
+
+test(
+  "stage an L1 and L2 actor before testing cross-chain business logic",
+  scenario(
+    withMultiChain({
+      l1: { type: "chain", chainId: 31_337 },
+      l2: { type: "chain", chainId: 31_338 },
+    }),
+    withFundedWallet({ chain: "l1", balance: parseEther("1") }),
+    withFundedWallet({ chain: "l2", balance: parseEther("2") }),
+    async ({ chains }) => {
+      const l1 = chains!.l1;
+      const l2 = chains!.l2;
+
+      // In production, these might be the two environments behind a deposit
+      // or settlement flow. In tests, named chain keys make that setup explicit
+      // and keep the body focused on the orchestration you actually care about.
+      const l1Balance = await l1.publicClient.getBalance({ address: l1.wallet! });
+      const l2Balance = await l2.publicClient.getBalance({ address: l2.wallet! });
+
+      expect(l1Balance).toBe(parseEther("1"));
+      expect(l2Balance).toBe(parseEther("2"));
+    },
+  ),
+);
+```
+
+### Config shape
+Each entry is a tagged union:
+
+| `type` | Meaning |
+| --- | --- |
+| `"chain"` | Fresh Anvil chain (optional `chainId`, `key`). |
+| `"fork"` | Pinned fork (`rpcUrl`, `blockNumber`, optional `chainId`, `key`). |
+| `"external"` | Attach an existing `runtime` (optional `runtimeMode`, `clients`). |
+
+### Options
+
+| Option | Type | Default | Description |
+| --- | --- | --- | --- |
+| `publicClientAliasPolicy` | `"prefer-default-then-lexical" \| "lexical"` | `"prefer-default-then-lexical"` | How top-level `publicClient` / `altPublicClient` aliases are chosen. |
+
+### Lifecycle
+Runtimes started by this fixture are stopped in reverse startup order in `finally`. External runtimes are never stopped here.
+
+### Adds to context
+- `chains`: a map of chain keys to full chain contexts (same fields as [`withChain`](/fixtures/runtime/withChain) per entry).
+- `publicClient`: convenience alias to the primary chain client (`default` key when present, otherwise first key in lexical order).
+- `altPublicClient`: optional convenience alias to a secondary chain client when one exists.
+
+### Context requirements
+None; this fixture can be the first runtime step, or compose after other steps that already set `ctx.chains` (duplicate keys throw).
+
+### Determinism + constraints
+
+- Maximum two chain entries per scenario.
+- Fork entries require pinned `blockNumber` for reproducibility.
+- Alias selection strategy is explicit via `publicClientAliasPolicy`.
+
+### Machine-readable failure codes
+
+- `SC_CONSTRAINT_VIOLATION` (too many chains, duplicate/incompatible constraints)
+- `SC_CONTEXT_MISSING` (downstream fixtures require missing chain context)
+- `SC_PRECONDITION_FAILED` (invalid entry inputs)
+
+### Notes and caveats
+- `withMultiChain(...)` accepts at most two entries; attempting more throws.
+- Chain startup order is lexical by key, and owned runtimes are stopped in reverse order during teardown.
+- External runtimes are attached but never stopped by this fixture.
+- Prefer meaningful keys like `l1`, `l2`, `src`, or `dest` so the test body reads like the real workflow you are modeling.

@@ -44,7 +44,7 @@ describe("withFundedWallet", () => {
       step({} as any, async () => {
         throw new Error("next should not run");
       }),
-    ).rejects.toThrow(/missing runtime clients/i);
+    ).rejects.toThrow(/missing runtime clients for chain "default"/i);
   });
 
   test("uses provided private key, funds wallet, and forwards updated context", async () => {
@@ -61,10 +61,14 @@ describe("withFundedWallet", () => {
     const step = withFundedWallet({ balance: 2n, privateKey });
     await step(
       {
-        runtime: { rpcUrl: "http://127.0.0.1:8545" },
-        publicClient: { chain: { id: 31337 } },
-        walletClient: { account: undefined },
-        testClient: { setBalance },
+        chains: {
+          default: {
+            runtime: { rpcUrl: "http://127.0.0.1:8545" },
+            publicClient: { chain: { id: 31337 } },
+            walletClient: { account: undefined },
+            testClient: { setBalance },
+          },
+        },
       } as any,
       next,
     );
@@ -83,8 +87,8 @@ describe("withFundedWallet", () => {
     });
 
     const [forwarded] = next.mock.calls[0]!;
-    expect(forwarded.wallet).toBe(account.address);
-    expect(forwarded.walletClient).toBe(walletClient);
+    expect(forwarded.chains!.default.wallet).toBe(account.address);
+    expect(forwarded.chains!.default.walletClient).toBe(walletClient);
   });
 
   test("generates key when omitted and seeds configured ERC-20 balances", async () => {
@@ -107,10 +111,14 @@ describe("withFundedWallet", () => {
 
     await step(
       {
-        runtime: { rpcUrl: "http://127.0.0.1:8545" },
-        publicClient: { chain: { id: 31337 } },
-        walletClient: {},
-        testClient: { setBalance },
+        chains: {
+          default: {
+            runtime: { rpcUrl: "http://127.0.0.1:8545" },
+            publicClient: { chain: { id: 31337 } },
+            walletClient: {},
+            testClient: { setBalance },
+          },
+        },
       } as any,
       async () => {},
     );

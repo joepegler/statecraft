@@ -1,6 +1,7 @@
 import { createServer } from "node:net";
 import { randomUUID } from "node:crypto";
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
+import { StatecraftError } from "../scenarios/errors.js";
 
 /** How anvil is started: empty chain or fork from a remote RPC. */
 export type RuntimeMode = "chain" | "fork";
@@ -37,11 +38,19 @@ const runtimeState = new WeakMap<RuntimeHandle, InternalRuntimeState>();
 
 function assertForkConfig(config: RuntimeConfig): asserts config is RuntimeConfig & { mode: "fork"; rpcUrl: string; blockNumber: bigint } {
   if (!config.rpcUrl) {
-    throw new Error("withFork/startRuntime requires rpcUrl for fork mode.");
+    throw new StatecraftError({
+      code: "SC_PRECONDITION_FAILED",
+      reason: "withFork/startRuntime requires rpcUrl for fork mode.",
+      suggestedAction: "Provide a valid rpcUrl when mode is 'fork'.",
+    });
   }
 
   if (config.blockNumber === undefined) {
-    throw new Error("withFork/startRuntime requires a pinned blockNumber in v1 for deterministic forks.");
+    throw new StatecraftError({
+      code: "SC_PRECONDITION_FAILED",
+      reason: "withFork/startRuntime requires a pinned blockNumber in v1 for deterministic forks.",
+      suggestedAction: "Set blockNumber to a bigint literal (for example 22_000_000n).",
+    });
   }
 }
 
@@ -54,11 +63,64 @@ async function getAvailablePort(): Promise<number> {
   const address = server.address();
   if (!address || typeof address === "string") {
     server.close();
-    throw new Error("Failed to allocate a local port for runtime.");
+    throw new StatecraftError({
+      code: "SC_RUNTIME_PORT_ALLOCATION_FAILED",
+      reason: "Failed to allocate a local port for runtime.",
+      suggestedAction: "Retry startup or free local ports before starting a runtime.",
+    });
   }
   const port = address.port;
   await new Promise<void>((resolve) => server.close(() => resolve()));
   return port;
+}
+
+async function waitForJsonRpcReady(args: { rpcUrl: string; timeoutMs: number }): Promise<void> {
+  const startedAt = Date.now();
+  let lastError: string | undefined;
+  while (Date.now() - startedAt < args.timeoutMs) {
+    let controllerTimeout: ReturnType<typeof setTimeout> | undefined;
+    try {
+      const controller = new AbortController();
+      controllerTimeout = setTimeout(() => controller.abort(), 500);
+      const response = await fetch(args.rpcUrl, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        signal: controller.signal,
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: 1,
+          method: "web3_clientVersion",
+          params: [],
+        }),
+      });
+      clearTimeout(controllerTimeout);
+      if (response.ok) {
+        const payload = await response.json() as { result?: unknown; error?: unknown };
+        if (payload.result !== undefined) {
+          return;
+        }
+        if (payload.error !== undefined) {
+          lastError = JSON.stringify(payload.error);
+        }
+      } else {
+        lastError = `HTTP ${response.status}`;
+      }
+    } catch (error) {
+      if (controllerTimeout) clearTimeout(controllerTimeout);
+      lastError = error instanceof Error ? error.message : String(error);
+    }
+    await new Promise((resolve) => setTimeout(resolve, 150));
+  }
+  throw new StatecraftError({
+    code: "SC_RUNTIME_START_TIMEOUT",
+    reason: "Runtime JSON-RPC endpoint did not become ready in time.",
+    context: {
+      rpcUrl: args.rpcUrl,
+      timeoutMs: args.timeoutMs,
+      lastError,
+    },
+    suggestedAction: "Inspect startup logs and ensure anvil can bind and answer JSON-RPC requests.",
+  });
 }
 
 /**
@@ -97,38 +159,57 @@ export async function startRuntime(input: RuntimeConfig): Promise<RuntimeHandle>
 
   const child = spawn("anvil", args, { stdio: "pipe" });
 
-  let startError: Error | undefined;
-  const startup = await new Promise<boolean>((resolve) => {
-    const timeout = setTimeout(() => {
-      startError = new Error("Timed out waiting for anvil to start. Ensure `anvil` is installed and on PATH.");
-      resolve(false);
-    }, 12_000);
+  const diagnostics = {
+    mode: config.mode,
+    port,
+    args,
+    stderrTail: [] as string[],
+  };
+  const onData = (chunk: Buffer) => {
+    const text = chunk.toString();
+    diagnostics.stderrTail.push(text.trim());
+    if (diagnostics.stderrTail.length > 20) {
+      diagnostics.stderrTail.shift();
+    }
+  };
+  child.stdout.on("data", onData);
+  child.stderr.on("data", onData);
 
-    const onData = (chunk: Buffer) => {
-      const text = chunk.toString();
-      if (text.includes("Listening on")) {
-        clearTimeout(timeout);
-        resolve(true);
-      }
-    };
-
-    child.stdout.on("data", onData);
-    child.stderr.on("data", onData);
+  const startupFailure = new Promise<never>((_, reject) => {
     child.once("error", (error) => {
-      clearTimeout(timeout);
-      startError = new Error(`Failed to start anvil runtime: ${error.message}`);
-      resolve(false);
+      reject(new StatecraftError({
+        code: "SC_RUNTIME_START_FAILED",
+        reason: `Failed to start anvil runtime: ${error.message}`,
+        context: diagnostics,
+        suggestedAction: "Verify anvil is executable and runtime args are valid.",
+        cause: error,
+      }));
     });
     child.once("exit", (code, signal) => {
-      clearTimeout(timeout);
-      startError = new Error(`Anvil exited during startup (code: ${String(code)}, signal: ${String(signal)}).`);
-      resolve(false);
+      reject(new StatecraftError({
+        code: "SC_RUNTIME_START_FAILED",
+        reason: `Anvil exited during startup (code: ${String(code)}, signal: ${String(signal)}).`,
+        context: {
+          ...diagnostics,
+          exitCode: code,
+          signal,
+        },
+        suggestedAction: "Inspect anvil startup logs and validate your fork config.",
+      }));
     });
   });
 
-  if (!startup) {
+  try {
+    await Promise.race([
+      waitForJsonRpcReady({
+        rpcUrl,
+        timeoutMs: 12_000,
+      }),
+      startupFailure,
+    ]);
+  } catch (error) {
     child.kill("SIGTERM");
-    throw startError ?? new Error("Failed to start runtime.");
+    throw error;
   }
 
   const handle: RuntimeHandle = {

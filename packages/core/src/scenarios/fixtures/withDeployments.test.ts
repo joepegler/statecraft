@@ -20,18 +20,24 @@ describe("withDeployments", () => {
 
   test("throws when artifact ABI is missing", async () => {
     const step = withDeployments({
-      token: {
-        artifact: { bytecode: "0x60016000f3" },
+      deployments: {
+        token: {
+          artifact: { bytecode: "0x60016000f3" },
+        },
       },
     });
 
     await expect(
       step(
         {
-          runtime: { rpcUrl: "http://127.0.0.1:8545" },
-          publicClient: {},
-          walletClient: { account: {} },
-          testClient: {},
+          chains: {
+            default: {
+              runtime: { rpcUrl: "http://127.0.0.1:8545" },
+              publicClient: {},
+              walletClient: { account: {} },
+              testClient: {},
+            },
+          },
         } as any,
         async () => {
           throw new Error("next should not run");
@@ -42,18 +48,24 @@ describe("withDeployments", () => {
 
   test("throws when wallet account is missing", async () => {
     const step = withDeployments({
-      token: {
-        artifact: { abi: [], bytecode: "0x60016000f3" },
+      deployments: {
+        token: {
+          artifact: { abi: [], bytecode: "0x60016000f3" },
+        },
       },
     });
 
     await expect(
       step(
         {
-          runtime: { rpcUrl: "http://127.0.0.1:8545" },
-          publicClient: {},
-          walletClient: {},
-          testClient: {},
+          chains: {
+            default: {
+              runtime: { rpcUrl: "http://127.0.0.1:8545" },
+              publicClient: {},
+              walletClient: {},
+              testClient: {},
+            },
+          },
         } as any,
         async () => {
           throw new Error("next should not run");
@@ -81,31 +93,38 @@ describe("withDeployments", () => {
     getContract.mockImplementation(({ address }) => ({ address, kind: "contract" }));
 
     const step = withDeployments({
-      first: {
-        artifact: { abi: [], bytecode: "0x60016000f3" },
-        args: [123n],
-      },
-      second: {
-        artifact: { abi: [], bytecode: { object: "0x60026000f3" } },
-        args: ({ deployments }) => [deployments.first!.address],
-        afterDeploy,
+      deployments: {
+        first: {
+          artifact: { abi: [], bytecode: "0x60016000f3" },
+          args: [123n],
+        },
+        second: {
+          artifact: { abi: [], bytecode: { object: "0x60026000f3" } },
+          args: ({ deployments }) => [deployments.first!.address],
+          afterDeploy,
+        },
       },
     });
 
     const next = vi.fn(async (nextCtx: any) => {
-      expect(nextCtx.deployments.existing).toEqual({ address: "0x0000000000000000000000000000000000000001" });
-      expect(nextCtx.deployments.first.address).toBe("0x00000000000000000000000000000000000000aa");
-      expect(nextCtx.deployments.second.address).toBe("0x00000000000000000000000000000000000000bb");
+      const dep = nextCtx.chains.default.deployments!;
+      expect(dep.existing).toEqual({ address: "0x0000000000000000000000000000000000000001" });
+      expect(dep.first.address).toBe("0x00000000000000000000000000000000000000aa");
+      expect(dep.second.address).toBe("0x00000000000000000000000000000000000000bb");
     });
 
     await step(
       {
-        runtime: { rpcUrl: "http://127.0.0.1:8545" },
-        publicClient: { waitForTransactionReceipt },
-        walletClient: { account, deployContract },
-        testClient: {},
-        wallet: account.address,
-        deployments: { existing: { address: "0x0000000000000000000000000000000000000001" } },
+        chains: {
+          default: {
+            runtime: { rpcUrl: "http://127.0.0.1:8545" },
+            publicClient: { waitForTransactionReceipt },
+            walletClient: { account, deployContract },
+            testClient: {},
+            wallet: account.address,
+            deployments: { existing: { address: "0x0000000000000000000000000000000000000001" } },
+          },
+        },
       } as any,
       next,
     );
@@ -125,10 +144,77 @@ describe("withDeployments", () => {
     expect(afterDeploy).toHaveBeenCalledWith(
       expect.objectContaining({
         name: "second",
+        chain: "default",
         wallet: account.address,
       }),
     );
     expect(getContract).toHaveBeenCalledTimes(2);
     expect(next).toHaveBeenCalledTimes(1);
+  });
+
+  test("supports legacy config shape without `deployments` wrapper", async () => {
+    const account = { address: "0x000000000000000000000000000000000000000f" };
+    const deployContract = vi.fn(async () => "0xaaa");
+    const waitForTransactionReceipt = vi.fn(async () => ({
+      contractAddress: "0x00000000000000000000000000000000000000aa",
+    }));
+
+    const step = withDeployments({
+      token: {
+        artifact: { abi: [], bytecode: "0x60016000f3" },
+      },
+    });
+
+    await step(
+      {
+        chains: {
+          default: {
+            runtime: { rpcUrl: "http://127.0.0.1:8545" },
+            publicClient: { waitForTransactionReceipt },
+            walletClient: { account, deployContract },
+            testClient: {},
+          },
+        },
+      } as any,
+      async () => undefined,
+    );
+
+    expect(deployContract).toHaveBeenCalledTimes(1);
+    expect(waitForTransactionReceipt).toHaveBeenCalledTimes(1);
+  });
+
+  test("supports strict preflight mode with machine-readable callback", async () => {
+    const onPreflight = vi.fn();
+    const step = withDeployments({
+      preflightMode: "strict",
+      onPreflight,
+      deployments: {
+        token: {
+          artifact: { abi: [], bytecode: "0x60016000f3" },
+        },
+      },
+    });
+
+    await expect(
+      step(
+        {
+          chains: {
+            default: {
+              chain: { id: 31337 },
+              runtime: { rpcUrl: "http://127.0.0.1:8545" },
+              publicClient: {},
+              walletClient: { account: { address: "0x0000000000000000000000000000000000000001" } },
+              testClient: {},
+            },
+          },
+        } as any,
+        async () => undefined,
+      ),
+    ).rejects.toThrow(/preflight failed/i);
+
+    expect(onPreflight).toHaveBeenCalledTimes(1);
+    expect(onPreflight.mock.calls[0]?.[0]?.result).toMatchObject({
+      canExecute: false,
+    });
   });
 });

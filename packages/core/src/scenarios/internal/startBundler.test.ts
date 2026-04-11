@@ -7,6 +7,7 @@ import { startBundler } from "./startBundler.js";
 const ENTRYPOINT = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789" as Address;
 
 const spawnMock = vi.fn();
+const fetchMock = vi.fn();
 
 vi.mock("node:child_process", () => ({
   spawn: (...args: unknown[]) => spawnMock(...args),
@@ -46,10 +47,17 @@ function mockSpawnWithDeferredSetup(setup: (child: FakeChild) => void) {
 describe("startBundler", () => {
   beforeEach(() => {
     spawnMock.mockReset();
+    fetchMock.mockReset();
+    vi.stubGlobal("fetch", fetchMock);
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({ result: [ENTRYPOINT] }),
+    } as Response);
   });
 
   afterEach(() => {
     vi.useRealTimers();
+    vi.unstubAllGlobals();
   });
 
   test("writes config, spawns Alto CLI, resolves when stdout shows listening, and stop removes temp dir", async () => {
@@ -115,7 +123,7 @@ describe("startBundler", () => {
         rpcUrl: "http://127.0.0.1:8545",
         entryPoint: ENTRYPOINT,
       }),
-    ).rejects.toThrow(/cannot bind port/);
+    ).rejects.toThrow(/failed to start local bundler/i);
 
     const child = spawnMock.mock.results[0]?.value as FakeChild;
     expect(child.kill).toHaveBeenCalledWith("SIGTERM");
@@ -131,7 +139,7 @@ describe("startBundler", () => {
         rpcUrl: "http://127.0.0.1:8545",
         entryPoint: ENTRYPOINT,
       }),
-    ).rejects.toThrow(/exited during startup/);
+    ).rejects.toThrow(/failed to start local bundler/i);
   });
 
   test("rejects when listening message never arrives (timeout)", async () => {
@@ -154,7 +162,24 @@ describe("startBundler", () => {
 
     await vi.advanceTimersByTimeAsync(12_000);
 
-    await expect(pending).rejects.toThrow(/Timed out waiting for Alto/);
+    await expect(pending).rejects.toThrow(/failed to start local bundler/i);
     expect(fakeChild.kill).toHaveBeenCalledWith("SIGTERM");
+  });
+
+  test("rejects when json-rpc readiness probe never succeeds", async () => {
+    mockSpawnWithDeferredSetup((child) => {
+      child.stdout.emit("data", Buffer.from("Server listening at\n"));
+    });
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({ error: { message: "not ready" } }),
+    } as Response);
+
+    const pending = startBundler({
+      rpcUrl: "http://127.0.0.1:8545",
+      entryPoint: ENTRYPOINT,
+      startupTimeoutMs: 100,
+    });
+    await expect(pending).rejects.toThrow(/failed to start local bundler/i);
   });
 });

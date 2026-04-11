@@ -62,12 +62,15 @@ describe("withFork", () => {
     });
 
     const next = vi.fn(async (nextCtx: any) => {
-      expect(nextCtx.runtime).toBe(runtime);
-      expect(nextCtx.runtimeMode).toBe("fork");
-      expect(nextCtx.chain).toBe(clients.publicClient.chain);
+      const ch = nextCtx.chains.default;
+      expect(ch.runtime).toBe(runtime);
+      expect(ch.runtimeMode).toBe("fork");
+      expect(ch.chain).toBe(clients.publicClient.chain);
+      expect(ch.publicClient).toBe(clients.publicClient);
+      expect(ch.walletClient).toBe(clients.walletClient);
+      expect(ch.testClient).toBe(clients.testClient);
       expect(nextCtx.publicClient).toBe(clients.publicClient);
-      expect(nextCtx.walletClient).toBe(clients.walletClient);
-      expect(nextCtx.testClient).toBe(clients.testClient);
+      expect(nextCtx.altPublicClient).toBeUndefined();
     });
     await step({ seed: true } as any, next);
 
@@ -80,5 +83,39 @@ describe("withFork", () => {
     });
     expect(createClients).toHaveBeenCalledWith(runtime, { chainId: 1 });
     expect(stopRuntime).toHaveBeenCalledWith(runtime);
+  });
+
+  test("reuses identical runtime inputs across repeated runs", async () => {
+    const runtime = { rpcUrl: "http://127.0.0.1:8545" };
+    const clients = {
+      publicClient: { chain: { id: 1 } },
+      walletClient: {},
+      testClient: {},
+    };
+    startRuntime.mockResolvedValue(runtime);
+    createClients.mockReturnValue(clients);
+
+    const { withFork } = await import("./withFork.js");
+    const step = withFork({
+      rpcUrl: "https://eth-mainnet.example",
+      blockNumber: 20_000_000n,
+      key: "deterministic-fork",
+    });
+
+    await step({} as any, async () => undefined);
+    await step({} as any, async () => undefined);
+
+    expect(startRuntime).toHaveBeenNthCalledWith(1, {
+      mode: "fork",
+      rpcUrl: "https://eth-mainnet.example",
+      blockNumber: 20_000_000n,
+      key: "deterministic-fork",
+    });
+    expect(startRuntime).toHaveBeenNthCalledWith(2, {
+      mode: "fork",
+      rpcUrl: "https://eth-mainnet.example",
+      blockNumber: 20_000_000n,
+      key: "deterministic-fork",
+    });
   });
 });

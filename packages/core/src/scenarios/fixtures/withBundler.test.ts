@@ -9,6 +9,20 @@ const createBundlerClient = vi.fn();
 vi.mock("../internal/startBundler.js", () => ({ startBundler }));
 vi.mock("../../clients/index.js", () => ({ createBundlerClient }));
 
+function forkCtx(overrides: Record<string, unknown> = {}) {
+  return {
+    chains: {
+      default: {
+        runtime: { rpcUrl: "http://127.0.0.1:8545" },
+        runtimeMode: "fork",
+        publicClient: { chain: {} },
+        walletClient: {},
+        testClient: { setBalance: vi.fn(async () => {}), ...overrides },
+      },
+    },
+  } as any;
+}
+
 describe("withBundler", () => {
   test("throws when runtime clients are missing", async () => {
     const { withBundler } = await import("./withBundler.js");
@@ -22,7 +36,7 @@ describe("withBundler", () => {
           throw new Error("next should not run");
         },
       ),
-    ).rejects.toThrow(/missing runtime clients/i);
+    ).rejects.toThrow(/missing runtime clients for chain "default"/i);
   });
 
   test("starts bundler, injects bundler fields, and stops on success", async () => {
@@ -40,18 +54,13 @@ describe("withBundler", () => {
 
     const { withBundler } = await import("./withBundler.js");
 
-    const ctx = {
-      runtime: { rpcUrl: "http://127.0.0.1:8545" },
-      runtimeMode: "fork",
-      publicClient: { chain: {} },
-      walletClient: {},
-      testClient: { setBalance: vi.fn(async () => {}) },
-    } as any;
+    const ctx = forkCtx();
+    ctx.chains.default.chain = {};
 
     const next = vi.fn(async (nextCtx: any) => {
-      expect(nextCtx.bundlerUrl).toBe("http://127.0.0.1:9999");
-      expect(nextCtx.entryPoint).toBe(ENTRYPOINT);
-      expect(nextCtx.bundlerClient).toBeDefined();
+      expect(nextCtx.chains.default.bundlerUrl).toBe("http://127.0.0.1:9999");
+      expect(nextCtx.chains.default.entryPoint).toBe(ENTRYPOINT);
+      expect(nextCtx.chains.default.bundlerClient).toBeDefined();
     });
 
     const step = withBundler({ entryPoint: ENTRYPOINT });
@@ -76,13 +85,8 @@ describe("withBundler", () => {
 
     const { withBundler } = await import("./withBundler.js");
 
-    const ctx = {
-      runtime: { rpcUrl: "http://127.0.0.1:8545" },
-      runtimeMode: "fork",
-      publicClient: { chain: {} },
-      walletClient: {},
-      testClient: { setBalance: vi.fn(async () => {}) },
-    } as any;
+    const ctx = forkCtx();
+    ctx.chains.default.chain = {};
 
     const step = withBundler({ entryPoint: ENTRYPOINT });
     await expect(
@@ -101,15 +105,11 @@ describe("withBundler", () => {
     expect(step).toBeDefined();
 
     const badStep = withBundler({ entryPoint: ENTRYPOINT, mode: "nope" as any });
+    const ctx = forkCtx();
+    ctx.chains.default.chain = {};
     await expect(
       badStep(
-        {
-          runtime: { rpcUrl: "http://127.0.0.1:8545" },
-          runtimeMode: "fork",
-          publicClient: { chain: {} },
-          walletClient: {},
-          testClient: { setBalance: vi.fn(async () => {}) },
-        } as any,
+        ctx,
         async () => {},
       ),
     ).rejects.toThrow(/only supports mode='alto'/i);
@@ -119,17 +119,21 @@ describe("withBundler", () => {
     const { withBundler } = await import("./withBundler.js");
     const step = withBundler({ entryPoint: ENTRYPOINT });
 
-    await expect(
-      step(
-        {
+    const ctx = {
+      chains: {
+        default: {
           runtime: { rpcUrl: "http://127.0.0.1:8545" },
           runtimeMode: "chain",
+          chain: {},
           publicClient: { chain: {} },
           walletClient: {},
           testClient: { setBalance: vi.fn(async () => {}) },
-        } as any,
-        async () => {},
-      ),
-    ).rejects.toThrow(/requires withFork\(\.\.\.\) to run first/i);
+        },
+      },
+    } as any;
+
+    await expect(
+      step(ctx, async () => {}),
+    ).rejects.toThrow(/requires withFork\(\.\.\.\)/i);
   });
 });
