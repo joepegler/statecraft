@@ -1,5 +1,10 @@
 import type { Address } from "viem";
-import type { ScenarioContext, ScenarioFundedWalletContext, ScenarioRuntimeClientsContext, ScenarioStep } from "../types.js";
+import type {
+  ScenarioContext,
+  ScenarioRuntimeClientsContext,
+  ScenarioStep,
+  ScenarioWalletOnChainContext,
+} from "../types.js";
 import { dealErc20Balance } from "../internal/dealErc20Balance.js";
 import { requireChainScopedRuntimeClients } from "../utils.js";
 
@@ -23,14 +28,14 @@ export type WithErc20BalanceConfig = {
 };
 
 export type WithErc20Balance = {
-  (config: WithErc20BalanceConfig & { to: Address }): ScenarioStep<ScenarioRuntimeClientsContext, ScenarioRuntimeClientsContext>;
-  (config: Omit<WithErc20BalanceConfig, "to"> & { chain?: undefined }): ScenarioStep<
-    ScenarioFundedWalletContext<"default">,
-    ScenarioFundedWalletContext<"default">
+  <Ctx extends ScenarioRuntimeClientsContext>(config: WithErc20BalanceConfig & { to: Address }): ScenarioStep<Ctx, Ctx>;
+  <Ctx extends ScenarioRuntimeClientsContext>(config: Omit<WithErc20BalanceConfig, "to"> & { chain?: undefined }): ScenarioStep<
+    ScenarioWalletOnChainContext<Ctx, "default">,
+    ScenarioWalletOnChainContext<Ctx, "default">
   >;
-  <C extends string>(config: Omit<WithErc20BalanceConfig, "to"> & { chain: C }): ScenarioStep<
-    ScenarioFundedWalletContext<C>,
-    ScenarioFundedWalletContext<C>
+  <Ctx extends ScenarioRuntimeClientsContext, C extends string>(config: Omit<WithErc20BalanceConfig, "to"> & { chain: C }): ScenarioStep<
+    ScenarioWalletOnChainContext<Ctx, C>,
+    ScenarioWalletOnChainContext<Ctx, C>
   >;
 };
 

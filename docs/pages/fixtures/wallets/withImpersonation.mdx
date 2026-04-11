@@ -8,7 +8,7 @@ description: Impersonate an existing account for scenario signing, with optional
 **Test runners:** Examples use Vitest `test` and `expect`. `scenario(...)` returns an async function you can pass to any runner with a similar `test` callback (for example Jest or Node `node:test`).
 
 ### Why it is useful
-Use `withImpersonation()` when you need to execute transactions as an existing address (for example a forked holder or protocol actor) without private key access.
+Use `withImpersonation()` when a scenario depends on an existing on-chain actor (for example treasury signer, whale holder, or governance address) and you need to test behavior without owning that actor's private key.
 
 ### Example
 ```ts twoslash [index.ts]
@@ -21,7 +21,7 @@ import {
 } from "@st8craft/core";
 
 test(
-  "impersonated account can sign on fork",
+  "simulate protocol-admin actions without the real private key",
   scenario(
     withFork({
       rpcUrl: process.env.VITE_RPC_URL!,
@@ -31,10 +31,15 @@ test(
       address: "0x000000000000000000000000000000000000dead",
       balance: parseEther("1"),
     }),
-    async ({ chains }) => {
-      const ch = chains!.default;
-      expect(ch.walletClient.account!.address).toBe(ch.wallet);
-      const eth = await ch.publicClient.getBalance({ address: ch.wallet! });
+    async ({ chains, publicClient }) => {
+      const admin = chains!.default.walletClient.account!.address;
+
+      // In production, this signer might be a multisig owner or protocol role.
+      // In this test, impersonation gives you that actor immediately so you can
+      // assert authorization or safety checks without key-management setup.
+      expect(admin).toBe("0x000000000000000000000000000000000000dEaD");
+
+      const eth = await publicClient.getBalance({ address: admin });
       expect(eth).toBe(parseEther("1"));
     },
   ),
@@ -63,3 +68,4 @@ This fixture does not start or stop Anvil. It manages impersonation lifecycle fo
 ### Notes and caveats
 - This behavior depends on Anvil test-client impersonation support.
 - If you set `stopOnExit: false`, impersonation remains active for the runtime until another step or test changes it.
+- Prefer forked runtimes for realistic impersonation scenarios where the actor's existing contract relationships or balances matter.

@@ -4,10 +4,15 @@ import type {
   ContractArtifact,
   DeploymentArgsResolver,
   DeploymentRecord,
+  ScenarioDeploymentsOnChainContext,
   ScenarioRuntimeClientsContext,
   ScenarioStep,
 } from "../types.js";
 import { extractBytecode, requireChainScopedRuntimeClients } from "../utils.js";
+import { simulateDeployment } from "../actions.js";
+import { assertPreflight } from "../preflight.js";
+import { StatecraftError } from "../errors.js";
+import { labelScenarioStep } from "../stepMeta.js";
 
 /**
  * Declares one contract to deploy via `walletClient.deployContract` in declaration order.
@@ -34,9 +39,11 @@ export type WithDeploymentsMap = Record<string, DeploymentSpec>;
 export type WithDeploymentsConfig =
   | WithDeploymentsMap
   | {
-  chain?: string;
-  deployments: WithDeploymentsMap;
-};
+      chain?: string;
+      preflightMode?: "none" | "warn" | "strict";
+      onPreflight?: (args: { chain: string; name: string; result: Awaited<ReturnType<typeof simulateDeployment>> }) => void;
+      deployments: WithDeploymentsMap;
+    };
 
 type DeploymentsMap = Record<string, DeploymentRecord>;
 
@@ -48,24 +55,68 @@ export function withDeployments<C extends ScenarioRuntimeClientsContext>(
   config: WithDeploymentsConfig,
 ): ScenarioStep<
   C & { chains: C["chains"] },
-  C & { chains: C["chains"] }
-> {
-  const { chainKey, deployments: deploymentMap } = normalizeWithDeploymentsConfig(config);
-  return async (ctx, next) => {
+  ScenarioDeploymentsOnChainContext<C, "default">
+>;
+export function withDeployments<Ctx extends ScenarioRuntimeClientsContext, C extends string>(
+  config: {
+    chain: C;
+    deployments: WithDeploymentsMap;
+  },
+): ScenarioStep<Ctx & { chains: Ctx["chains"] }, ScenarioDeploymentsOnChainContext<Ctx, C>>;
+export function withDeployments<C extends ScenarioRuntimeClientsContext>(
+  config: WithDeploymentsConfig,
+): ScenarioStep<any, any> {
+  const { chainKey, deployments: deploymentMap, preflightMode, onPreflight } = normalizeWithDeploymentsConfig(config);
+  return labelScenarioStep(async (
+    ctx: ScenarioRuntimeClientsContext,
+    next: (ctx: ScenarioRuntimeClientsContext) => Promise<void>,
+  ) => {
     requireChainScopedRuntimeClients(ctx, chainKey);
     const ch = ctx.chains[chainKey]!;
     const deployments: DeploymentsMap = { ...(ch.deployments ?? {}) };
 
     for (const [name, spec] of Object.entries(deploymentMap)) {
       if (!spec.artifact.abi) {
-        throw new Error(`${name}.artifact.abi is required for deployment.`);
+        throw new StatecraftError({
+          code: "SC_PRECONDITION_FAILED",
+          reason: `${name}.artifact.abi is required for deployment.`,
+          context: { name, chain: chainKey },
+          suggestedAction: "Provide an ABI for each deployment artifact.",
+        });
       }
 
       const bytecode = extractBytecode(spec.artifact.bytecode, `${name}.bytecode`);
       const args = typeof spec.args === "function" ? await spec.args({ deployments }) : spec.args ?? [];
       const account = ch.walletClient.account;
       if (!account) {
-        throw new Error("withDeployments(...) requires a walletClient account.");
+        throw new StatecraftError({
+          code: "SC_PRECONDITION_FAILED",
+          reason: "withDeployments(...) requires a walletClient account.",
+          context: { chain: chainKey, deployment: name },
+          suggestedAction: "Compose withFundedWallet(...) before withDeployments(...).",
+        });
+      }
+
+      if (preflightMode !== "none") {
+        const preflight = await simulateDeployment({
+          publicClient: ch.publicClient,
+          plan: {
+            kind: "deployment",
+            abi: spec.artifact.abi,
+            bytecode,
+            args,
+            account,
+            chainId: ch.chain.id,
+          },
+        });
+        onPreflight?.({
+          chain: chainKey,
+          name,
+          result: preflight,
+        });
+        if (preflightMode === "strict") {
+          assertPreflight(preflight);
+        }
       }
 
       const hash = await ch.walletClient.deployContract({
@@ -109,13 +160,20 @@ export function withDeployments<C extends ScenarioRuntimeClientsContext>(
         },
       },
     });
-  };
+  }, "withDeployments");
 }
 
-function normalizeWithDeploymentsConfig(config: WithDeploymentsConfig): { chainKey: string; deployments: WithDeploymentsMap } {
+function normalizeWithDeploymentsConfig(config: WithDeploymentsConfig): {
+  chainKey: string;
+  deployments: WithDeploymentsMap;
+  preflightMode: "none" | "warn" | "strict";
+  onPreflight?: (args: { chain: string; name: string; result: Awaited<ReturnType<typeof simulateDeployment>> }) => void;
+} {
   const maybeScoped = config as {
     chain?: string;
     deployments?: unknown;
+    preflightMode?: "none" | "warn" | "strict";
+    onPreflight?: (args: { chain: string; name: string; result: Awaited<ReturnType<typeof simulateDeployment>> }) => void;
   };
   if (maybeScoped.deployments && typeof maybeScoped.deployments === "object") {
     const maybeLegacyDeploymentsKey = maybeScoped.deployments as { artifact?: unknown };
@@ -124,6 +182,8 @@ function normalizeWithDeploymentsConfig(config: WithDeploymentsConfig): { chainK
       return {
         chainKey: maybeScoped.chain ?? "default",
         deployments: maybeScoped.deployments as WithDeploymentsMap,
+        preflightMode: maybeScoped.preflightMode ?? "none",
+        onPreflight: maybeScoped.onPreflight,
       };
     }
   }
@@ -131,5 +191,6 @@ function normalizeWithDeploymentsConfig(config: WithDeploymentsConfig): { chainK
   return {
     chainKey: "default",
     deployments: config as WithDeploymentsMap,
+    preflightMode: "none",
   };
 }

@@ -9,6 +9,12 @@ description: Start or attach Anvil runtimes and wire viem clients under ctx.chai
 
 Statecraft scenarios require at least one runtime and viem clients. Runtime fixtures place chain state under **`ctx.chains.<key>`** (the default key is **`default`** when you use `withChain`, `withFork`, or `withExternalRuntime` without `chainKey`).
 
+Use this section to choose the runtime shape that matches your real testing job:
+- local isolated logic (`withChain`)
+- pinned historical integration checks (`withFork`)
+- suite-owned shared runtime workflows (`withExternalRuntime`)
+- coordinated multi-environment paths such as source/destination or L1/L2 (`withMultiChain`)
+
 ## Choosing a base runtime strategy
 
 - **Single chain:** use exactly one of `withChain`, `withFork`, or `withExternalRuntime` as your first runtime step (or combine multiple single-chain steps with different `chainKey` values).

@@ -4,10 +4,91 @@ import type {
   ScenarioStep,
   ScenarioTest,
 } from "./types.js";
+import { toStatecraftError, type StatecraftError } from "./errors.js";
+import { getScenarioStepLabel } from "./stepMeta.js";
 
-function compose(steps: ScenarioStep<ScenarioContext, ScenarioContext>[], testFn: ScenarioTest<ScenarioContext>): (ctx: ScenarioContext) => Promise<void> {
+export type ScenarioStepEvent = {
+  stepIndex: number;
+  stepLabel: string;
+  contextKeysBefore: string[];
+};
+
+export type ScenarioStepSuccessEvent = ScenarioStepEvent & {
+  durationMs: number;
+  contextDeltaKeys: string[];
+};
+
+export type ScenarioStepFailureEvent = ScenarioStepEvent & {
+  durationMs: number;
+  error: StatecraftError;
+};
+
+export type ScenarioCleanupEvent = {
+  finalContextKeys: string[];
+  error?: StatecraftError;
+};
+
+export type ScenarioRunOptions = {
+  onStepStart?: (event: ScenarioStepEvent) => void;
+  onStepSuccess?: (event: ScenarioStepSuccessEvent) => void;
+  onStepFailure?: (event: ScenarioStepFailureEvent) => void;
+  onCleanup?: (event: ScenarioCleanupEvent) => void;
+};
+
+type ScenarioConfigInput = {
+  options?: ScenarioRunOptions;
+};
+
+function isScenarioConfigInput(value: unknown): value is ScenarioConfigInput {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+  if (typeof value === "function") {
+    return false;
+  }
+  const candidate = value as Record<string, unknown>;
+  return "options" in candidate;
+}
+
+function deriveStepLabel(step: ScenarioStep<ScenarioContext, ScenarioContext>, index: number): string {
+  const labeled = getScenarioStepLabel(step);
+  if (labeled) {
+    return labeled;
+  }
+  return step.name?.trim() ? step.name : `step#${index + 1}`;
+}
+
+function diffContextKeys(previous: ScenarioContext, next: ScenarioContext): string[] {
+  const previousKeys = new Set(Object.keys(previous));
+  const nextKeys = new Set(Object.keys(next));
+  const delta = new Set<string>();
+  for (const key of previousKeys) {
+    if (!nextKeys.has(key)) {
+      delta.add(`-${key}`);
+    }
+  }
+  for (const key of nextKeys) {
+    if (!previousKeys.has(key)) {
+      delta.add(`+${key}`);
+    }
+  }
+  for (const key of nextKeys) {
+    if (previousKeys.has(key) && previous[key as keyof ScenarioContext] !== next[key as keyof ScenarioContext]) {
+      delta.add(`~${key}`);
+    }
+  }
+  return [...delta];
+}
+
+function compose(
+  steps: ScenarioStep<ScenarioContext, ScenarioContext>[],
+  testFn: ScenarioTest<ScenarioContext>,
+  options?: ScenarioRunOptions,
+): (ctx: ScenarioContext) => Promise<void> {
   return async function run(ctx: ScenarioContext): Promise<void> {
     let index = -1;
+    let lastContext = ctx;
+    let terminalError: StatecraftError | undefined;
     const dispatch = async (position: number, nextCtx: ScenarioContext): Promise<void> => {
       if (position <= index) {
         throw new Error("Scenario middleware called next() multiple times.");
@@ -16,14 +97,57 @@ function compose(steps: ScenarioStep<ScenarioContext, ScenarioContext>[], testFn
 
       const step = steps[position];
       if (!step) {
+        lastContext = nextCtx;
         await testFn(nextCtx);
         return;
       }
 
-      await step(nextCtx, (updatedCtx) => dispatch(position + 1, updatedCtx));
+      const startedAt = Date.now();
+      const stepLabel = deriveStepLabel(step, position);
+      options?.onStepStart?.({
+        stepIndex: position,
+        stepLabel,
+        contextKeysBefore: Object.keys(nextCtx),
+      });
+      try {
+        await step(nextCtx, async (updatedCtx) => {
+          options?.onStepSuccess?.({
+            stepIndex: position,
+            stepLabel,
+            durationMs: Date.now() - startedAt,
+            contextKeysBefore: Object.keys(nextCtx),
+            contextDeltaKeys: diffContextKeys(nextCtx, updatedCtx),
+          });
+          lastContext = updatedCtx;
+          await dispatch(position + 1, updatedCtx);
+        });
+      } catch (error) {
+        const normalized = toStatecraftError(error, {
+          code: "SC_PRECONDITION_FAILED",
+          reason: `Scenario step "${stepLabel}" failed.`,
+          context: { stepIndex: position, stepLabel },
+          suggestedAction: "Inspect the nested cause and scenario step order.",
+        });
+        terminalError = normalized;
+        options?.onStepFailure?.({
+          stepIndex: position,
+          stepLabel,
+          durationMs: Date.now() - startedAt,
+          contextKeysBefore: Object.keys(nextCtx),
+          error: normalized,
+        });
+        throw normalized;
+      }
     };
 
-    await dispatch(0, ctx);
+    try {
+      await dispatch(0, ctx);
+    } finally {
+      options?.onCleanup?.({
+        finalContextKeys: Object.keys(lastContext),
+        error: terminalError,
+      });
+    }
   };
 }
 
@@ -230,14 +354,18 @@ export function scenario<
   test: ScenarioTest<O12>,
 ): () => Promise<void>;
 /** Fallback when custom steps use the default {@link ScenarioStep} shape (untyped pipeline). */
-export function scenario(...parts: [...ScenarioStep[], ScenarioTest]): () => Promise<void> {
+export function scenario(config: ScenarioConfigInput, ...parts: [...ScenarioStep[], ScenarioTest]): () => Promise<void>;
+export function scenario(...rawParts: [ScenarioConfigInput, ...ScenarioStep[], ScenarioTest] | [...ScenarioStep[], ScenarioTest]): () => Promise<void> {
+  const [config, parts] = isScenarioConfigInput(rawParts[0])
+    ? [rawParts[0], rawParts.slice(1)]
+    : [undefined, rawParts];
   const testFn = parts.at(-1);
   if (!testFn || typeof testFn !== "function") {
     throw new Error("scenario(...) requires a final async test function.");
   }
 
   const steps = parts.slice(0, -1) as ScenarioStep<ScenarioContext, ScenarioContext>[];
-  const run = compose(steps, testFn as ScenarioTest<ScenarioContext>);
+  const run = compose(steps, testFn as ScenarioTest<ScenarioContext>, config?.options);
 
   return async () => {
     await run({});

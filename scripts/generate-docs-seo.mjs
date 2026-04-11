@@ -27,6 +27,7 @@ const routes = [
   "/skill",
   "/overview",
   "/fixtures/runtime",
+  "/fixtures/runtime/withBridge",
   "/fixtures/wallets",
   "/fixtures/tokens",
   "/fixtures/contracts",

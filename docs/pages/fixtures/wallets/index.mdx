@@ -9,6 +9,10 @@ description: Use funded and impersonated account fixtures to prepare scenario si
 
 Wallet and balance fixtures prepare the scenario account that later steps (token seeding and contract interactions) will use.
 
+Choose between:
+- `withFundedWallet` when you need a fresh deterministic actor with known balances
+- `withImpersonation` when your test must behave as an existing on-chain actor (admin, treasury, whale) without private key access
+
 ## Fixtures
 
 - [`withFundedWallet({ balance[, privateKey, erc20] })`](/fixtures/wallets/withFundedWallet)

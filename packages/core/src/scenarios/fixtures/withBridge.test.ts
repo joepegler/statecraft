@@ -157,6 +157,61 @@ describe("withBridge", () => {
 
     await expect(step({ chains: {} } as any, async () => {})).rejects.toThrow(/missing runtime clients for chain "src"/i);
   });
+
+  test("supports preflight before execution", async () => {
+    const srcBalances = new Map<string, bigint>([[ALICE, 10n]]);
+    const destBalances = new Map<string, bigint>([[BOB, 1n]]);
+    const step = withBridge({
+      srcChain: "src",
+      destChain: "dest",
+      fromToken: NATIVE_TOKEN_ADDRESS,
+      toToken: NATIVE_TOKEN_ADDRESS,
+    });
+    const ctx = {
+      chains: {
+        src: makeNativeChain({ wallet: ALICE, balances: srcBalances }),
+        dest: makeNativeChain({ wallet: BOB, balances: destBalances }),
+      },
+    } as any;
+
+    await step(ctx, async (nextCtx: any) => {
+      const preflight = await nextCtx.bridge.preflight({ amountIn: 2n, price: 1n });
+      expect(preflight.canExecute).toBe(true);
+      expect(preflight.reasons).toEqual([]);
+      expect(preflight.estimatedEffects).toMatchObject({
+        srcChain: "src",
+        destChain: "dest",
+      });
+    });
+  });
+
+  test("uses idempotency key to avoid duplicate execution", async () => {
+    const srcBalances = new Map<string, bigint>([[ALICE, 10n]]);
+    const destBalances = new Map<string, bigint>([[BOB, 1n]]);
+    const step = withBridge({
+      srcChain: "src",
+      destChain: "dest",
+      fromToken: NATIVE_TOKEN_ADDRESS,
+      toToken: NATIVE_TOKEN_ADDRESS,
+    });
+    const ctx = {
+      chains: {
+        src: makeNativeChain({ wallet: ALICE, balances: srcBalances }),
+        dest: makeNativeChain({ wallet: BOB, balances: destBalances }),
+      },
+    } as any;
+
+    await step(ctx, async (nextCtx: any) => {
+      const first = await nextCtx.bridge.execute({ amountIn: 4n, price: 1n, idempotencyKey: "k1" });
+      const second = await nextCtx.bridge.execute({ amountIn: 4n, price: 1n, idempotencyKey: "k1" });
+      expect(second).toEqual(first);
+      await expect(
+        nextCtx.bridge.execute({ amountIn: 5n, price: 1n, idempotencyKey: "k1" }),
+      ).rejects.toThrow(/idempotency key reused/i);
+    });
+    expect(srcBalances.get(ALICE)).toBe(6n);
+    expect(destBalances.get(BOB)).toBe(5n);
+  });
 });
 
 function makeNativeChain({

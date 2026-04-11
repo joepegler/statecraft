@@ -56,6 +56,11 @@ const pageSocial: Record<
     twitterDescription:
       "Choose withChain, withFork, or withExternalRuntime to provide the runtime and viem clients a scenario needs.",
   },
+  "/fixtures/runtime/withBridge": {
+    twitterTitle: "withBridge fixture – Statecraft",
+    twitterDescription:
+      "Simulate deterministic cross-chain transfers by exposing ctx.bridge.execute(...) in multi-chain scenarios.",
+  },
   "/fixtures/wallets": {
     twitterTitle: "Wallets & balance fixtures – Statecraft",
     twitterDescription:
@@ -161,6 +166,7 @@ export default defineConfig({
               link: "/fixtures/runtime/withExternalRuntime",
             },
             { text: "withMultiChain", link: "/fixtures/runtime/withMultiChain" },
+            { text: "withBridge", link: "/fixtures/runtime/withBridge" },
             { text: "withBundler", link: "/fixtures/runtime/withBundler" },
           ],
         },

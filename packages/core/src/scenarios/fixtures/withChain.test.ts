@@ -39,6 +39,8 @@ describe("withChain", () => {
       expect(ch.publicClient).toBe(clients.publicClient);
       expect(ch.walletClient).toBe(clients.walletClient);
       expect(ch.testClient).toBe(clients.testClient);
+      expect(nextCtx.publicClient).toBe(clients.publicClient);
+      expect(nextCtx.altPublicClient).toBeUndefined();
       expect(nextCtx.keep).toBe("me");
     });
 

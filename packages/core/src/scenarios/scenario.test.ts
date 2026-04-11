@@ -2,6 +2,7 @@ import { describe, expect, test, vi } from "vitest";
 import type { Hex } from "viem";
 import { scenario } from "./scenario.js";
 import type { EmptyScenarioContext, ScenarioContext, ScenarioStep } from "./types.js";
+import { StatecraftError } from "./errors.js";
 
 describe("scenario composition", () => {
   test("runs steps in declared order and passes context", async () => {
@@ -40,6 +41,43 @@ describe("scenario composition", () => {
       scenario(badStep, async () => {
         // noop
       })(),
-    ).rejects.toThrow("next() multiple times");
+    ).rejects.toBeInstanceOf(StatecraftError);
+  });
+
+  test("emits step-level tracing hooks", async () => {
+    const onStepStart = vi.fn();
+    const onStepSuccess = vi.fn();
+    const onStepFailure = vi.fn();
+    const onCleanup = vi.fn();
+
+    const stepA: ScenarioStep<EmptyScenarioContext, ScenarioContext & { wallet: Hex }> = async (ctx, next) => {
+      await next({ ...ctx, wallet: "0xabc" as Hex });
+    };
+    const stepB: ScenarioStep<ScenarioContext & { wallet: Hex }, ScenarioContext & { wallet: Hex }> = async (ctx, next) => {
+      await next({ ...ctx, chains: {} as any });
+    };
+
+    await scenario(
+      {
+        options: {
+          onStepStart,
+          onStepSuccess,
+          onStepFailure,
+          onCleanup,
+        },
+      },
+      stepA,
+      stepB,
+      async () => {
+        // noop
+      },
+    )();
+
+    expect(onStepStart).toHaveBeenCalledTimes(2);
+    expect(onStepSuccess).toHaveBeenCalledTimes(2);
+    expect(onStepFailure).not.toHaveBeenCalled();
+    expect(onCleanup).toHaveBeenCalledTimes(1);
+    const deltaKeys = onStepSuccess.mock.calls[0]?.[0]?.contextDeltaKeys as string[];
+    expect(deltaKeys.some((k) => k.includes("wallet"))).toBe(true);
   });
 });

@@ -8,7 +8,7 @@ description: Start a fresh local Anvil instance with an empty chain.
 **Test runners:** Examples use Vitest `test` and `expect`. `scenario(...)` returns an async function you can pass to any runner with a similar `test` callback (for example Jest or Node `node:test`).
 
 ### Why it is useful
-Use `withChain()` when you want fast, local integration tests without relying on any external RPC providers.
+Use `withChain()` when you want a fast local EVM for business-logic tests that should not depend on a live RPC, pinned fork, or suite-level runtime setup. It is a good fit for greenfield protocol flows, local checkout rules, or contract interactions where the interesting part is your app logic, not remote chain state.
 
 ### Example
 ```ts twoslash [index.ts]
@@ -17,17 +17,22 @@ import { parseEther } from "viem";
 import { scenario, withChain, withFundedWallet } from "@st8craft/core";
 
 test(
-  "funded wallet on local chain",
+  "validate a local payout rule without external RPC setup",
   scenario(
     withChain(),
     withFundedWallet({ balance: parseEther("1") }),
-    async ({ chains }) => {
-      const ch = chains!.default;
-      expect(
-        await ch.publicClient.getBalance({ address: ch.wallet! }),
-      ).toBe(
-        parseEther("1"),
-      );
+    async ({ chains, publicClient }) => {
+      const operator = chains!.default.walletClient.account!.address;
+      const startingBalance = await publicClient.getBalance({ address: operator });
+
+      // In production, this account would usually come from wallet plumbing
+      // or test hooks you maintain yourself. In this test, Statecraft gives
+      // you a local chain plus a ready signer so you can jump straight to the rule.
+      const payoutAmount = parseEther("0.25");
+      const reserveAfterPayout = startingBalance - payoutAmount;
+
+      expect(startingBalance).toBe(parseEther("1"));
+      expect(reserveAfterPayout).toBe(parseEther("0.75"));
     },
   ),
 );
@@ -49,6 +54,10 @@ Under `ctx.chains[chainKey]` (default key `default`):
 - `walletClient`
 - `testClient`
 
+Top-level convenience aliases:
+- `publicClient` (primary chain client)
+- `altPublicClient` (secondary chain client when one exists)
+
 ### Context requirements
 None; this fixture is the base runtime step.
 
@@ -56,5 +65,6 @@ None; this fixture is the base runtime step.
 Managed lifecycle, the fixture starts and stops Anvil for the scenario.
 
 ### Notes and caveats
-This is the simplest fixture for local work, but it does not pin to any remote state.
+- This is the simplest fixture for local work, but it does not pin to any remote state.
+- Prefer `withFork()` when the scenario depends on real deployed contracts, real storage layouts, or a specific historical block.
 

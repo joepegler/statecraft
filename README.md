@@ -51,9 +51,8 @@ test(
     withFundedWallet({
       balance: 1_000_000_000_000_000_000n, // 1 ETH in wei
     }),
-    async ({ chains }) => {
-      const ch = chains!.default;
-      const balance = await ch.publicClient.getBalance({ address: ch.wallet! });
+    async ({ chains, publicClient }) => {
+      const balance = await publicClient.getBalance({ address: chains!.default.wallet! });
       expect(balance).toBe(1_000_000_000_000_000_000n);
     },
   ),
@@ -101,13 +100,12 @@ test(
       token: USDC_MAINNET,
       amount: 1_000_000n, // 1 USDC (6 decimals)
     }),
-    async ({ chains }) => {
-      const ch = chains!.default;
-      const usdc = await ch.publicClient.readContract({
+    async ({ chains, publicClient }) => {
+      const usdc = await publicClient.readContract({
         address: USDC_MAINNET,
         abi: erc20Abi,
         functionName: "balanceOf",
-        args: [ch.wallet!],
+        args: [chains!.default.wallet!],
       });
 
       expect(usdc).toBe(1_000_000n);
@@ -122,6 +120,7 @@ test(
 - `withChain()`: starts a fresh local Anvil runtime (under `ctx.chains.default` unless `chainKey` is set).
 - `withFork({ rpcUrl, blockNumber })`: starts a pinned local fork for deterministic mainnet state.
 - `withMultiChain({ ... })`: starts or attaches multiple named chains on `ctx.chains`.
+- `publicClient` / `altPublicClient`: top-level convenience aliases for the primary chain and optional secondary chain.
 - `withFundedWallet({ balance, erc20?, chain? })`: creates and funds a test wallet on a chain entry.
 - `withErc20Balance({ token, amount })`: seeds ERC-20 balance on compatible local or forked nodes.
 - `withSnapshot()`: snapshots before inner steps and reverts in `finally`.

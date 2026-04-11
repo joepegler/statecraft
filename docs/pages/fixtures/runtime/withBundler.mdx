@@ -8,7 +8,7 @@ description: Start a local Alto bundler connected to the current Anvil runtime.
 **Test runners:** Examples use Vitest `test` and `expect`. `scenario(...)` returns an async function you can pass to any runner with a similar `test` callback (for example Jest or Node `node:test`).
 
 ### Why it is useful
-Use `withBundler()` to enable ERC-4337 flows against a local bundler that is wired to your scenario runtime.
+Use `withBundler()` when your business logic depends on ERC-4337 bundler behavior (entry points, user-op routing, or account-abstraction plumbing), but you do not want to run and wire a separate bundler process in every test by hand.
 
 ### Example
 ```ts twoslash [index.ts]
@@ -18,7 +18,7 @@ import { scenario, withFork, withBundler } from "@st8craft/core";
 const ENTRY_POINT = "0x0576a174D229E3cFA37253523E645A78A0C91B57";
 
 test(
-  "bundler wiring is exposed on the chain context",
+  "wire a forked AA environment for user-op business logic tests",
   scenario(
     withFork({
       rpcUrl: process.env.VITE_RPC_URL!,
@@ -26,8 +26,10 @@ test(
     }),
     withBundler({ entryPoint: ENTRY_POINT, mode: "alto" }),
     async ({ chains }) => {
-      const ch = chains!.default;
-      expect(await ch.bundlerClient!.getSupportedEntryPoints()).toContain(ENTRY_POINT);
+      // In production, your app points to an external bundler endpoint.
+      // In this test, Statecraft spins up a local bundler tied to the fork
+      // so you can assert your AA wiring before writing full user-op flows.
+      expect(await chains!.default.bundlerClient!.getSupportedEntryPoints()).toContain(ENTRY_POINT);
     },
   ),
 );
@@ -54,4 +56,5 @@ On `ctx.chains[chain]`:
 Managed lifecycle, the fixture starts a local bundler for the scenario and stops it in `finally`.
 
 ### Notes and caveats
-Additional examples for user operations are planned.
+- This fixture is best used to validate your account-abstraction integration points quickly; full user-operation execution examples are planned.
+- Bundler behavior is local test infrastructure in this setup, not a guarantee of a specific third-party bundler service.

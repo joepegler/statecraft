@@ -2,6 +2,7 @@ import { getContract, type Hex } from "viem";
 import type {
   AfterSetCodeContext,
   ContractArtifact,
+  ScenarioContractsOnChainContext,
   ScenarioContracts,
   ScenarioRuntimeClientsContext,
   ScenarioStep,
@@ -37,18 +38,30 @@ export type WithContractsConfig =
   contracts: WithContractsMap;
 };
 
-type WithContractsIn = ScenarioRuntimeClientsContext;
-type WithContractsOut = ScenarioRuntimeClientsContext;
-
 /**
  * Middleware: for each entry, `setCode` at `address`, then merge contract handles into `ctx.chains[chain].contracts`.
  * Requires a prior runtime fixture for that chain.
  */
 export function withContracts(
   config: WithContractsConfig,
-): ScenarioStep<WithContractsIn, WithContractsOut> {
+): ScenarioStep<
+  ScenarioRuntimeClientsContext,
+  ScenarioContractsOnChainContext<ScenarioRuntimeClientsContext, "default">
+>;
+export function withContracts<Ctx extends ScenarioRuntimeClientsContext, C extends string>(
+  config: {
+    chain: C;
+    contracts: WithContractsMap;
+  },
+): ScenarioStep<Ctx, ScenarioContractsOnChainContext<Ctx, C>>;
+export function withContracts(
+  config: WithContractsConfig,
+): ScenarioStep<any, any> {
   const { chainKey, contracts: contractMap } = normalizeWithContractsConfig(config);
-  return async (ctx, next) => {
+  return async (
+    ctx: ScenarioRuntimeClientsContext,
+    next: (ctx: ScenarioRuntimeClientsContext) => Promise<void>,
+  ) => {
     requireChainScopedRuntimeClients(ctx, chainKey);
     const ch = ctx.chains[chainKey]!;
     const contracts: ScenarioContracts = { ...(ch.contracts ?? {}) };

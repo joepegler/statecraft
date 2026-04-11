@@ -4,6 +4,7 @@ import {
   NATIVE_TOKEN_ADDRESS,
   type BridgeExecuteArgs,
   type BridgeExecution,
+  type ScenarioChainContext,
   type ScenarioBridge,
   type ScenarioBridgeContext,
   type ScenarioRuntimeClientsContext,
@@ -11,6 +12,9 @@ import {
   type WithBridgeConfig,
 } from "../types.js";
 import { requireChainScopedRuntimeClients } from "../utils.js";
+import { StatecraftError } from "../errors.js";
+import type { ActionPreflight, PreflightIssue } from "../actions.js";
+import { labelScenarioStep } from "../stepMeta.js";
 
 const NATIVE_TOKEN = NATIVE_TOKEN_ADDRESS as Address;
 
@@ -30,10 +34,15 @@ export function withBridge<C extends ScenarioRuntimeClientsContext>(
 > {
   const priceScale = config.priceScale ?? 1n;
   if (priceScale <= 0n) {
-    throw new Error("withBridge(...) requires priceScale to be greater than zero.");
+    throw new StatecraftError({
+      code: "SC_PRECONDITION_FAILED",
+      reason: "withBridge(...) requires priceScale to be greater than zero.",
+      context: { priceScale: String(priceScale) },
+      suggestedAction: "Provide a positive bigint priceScale.",
+    });
   }
 
-  return async (ctx, next) => {
+  return labelScenarioStep(async (ctx, next) => {
     requireChainScopedRuntimeClients(ctx, config.srcChain);
     requireChainScopedRuntimeClients(ctx, config.destChain);
 
@@ -41,31 +50,76 @@ export function withBridge<C extends ScenarioRuntimeClientsContext>(
     const dest = ctx.chains[config.destChain]!;
 
     if (ctx.bridge) {
-      throw new Error("withBridge(...) ctx.bridge is already defined. Compose at most one withBridge(...) per scenario.");
+      throw new StatecraftError({
+        code: "SC_CONSTRAINT_VIOLATION",
+        reason: "withBridge(...) ctx.bridge is already defined. Compose at most one withBridge(...) per scenario.",
+        suggestedAction: "Use a single withBridge(...) step and invoke bridge.execute(...) multiple times as needed.",
+      });
     }
 
+    const executionLedger = new Map<string, { fingerprint: string; result: BridgeExecution }>();
     const bridge: ScenarioBridge = {
-      execute: async ({ amountIn, price, from, to }: BridgeExecuteArgs): Promise<BridgeExecution> => {
-        if (amountIn < 0n) {
-          throw new Error("withBridge(...).execute(...) requires amountIn to be non-negative.");
+      preflight: async ({ amountIn, price, from, to }: BridgeExecuteArgs): Promise<ActionPreflight> => {
+        return preflightBridgeExecution({
+          src,
+          dest,
+          config,
+          amountIn,
+          price,
+          from,
+          to,
+          priceScale,
+        });
+      },
+      execute: async ({ amountIn, price, from, to, idempotencyKey }: BridgeExecuteArgs): Promise<BridgeExecution> => {
+        if (idempotencyKey) {
+          const fingerprint = buildExecutionFingerprint({
+            amountIn,
+            price,
+            from,
+            to,
+            srcChain: config.srcChain,
+            destChain: config.destChain,
+            fromToken: config.fromToken,
+            toToken: config.toToken,
+          });
+          const seen = executionLedger.get(idempotencyKey);
+          if (seen) {
+            if (seen.fingerprint !== fingerprint) {
+              throw new StatecraftError({
+                code: "SC_CONSTRAINT_VIOLATION",
+                reason: "Bridge idempotency key reused with a different payload.",
+                context: {
+                  idempotencyKey,
+                },
+                suggestedAction: "Use a unique idempotency key per distinct bridge payload.",
+              });
+            }
+            return seen.result;
+          }
         }
-        if (price < 0n) {
-          throw new Error("withBridge(...).execute(...) requires price to be non-negative.");
+
+        const preflight = await preflightBridgeExecution({
+          src,
+          dest,
+          config,
+          amountIn,
+          price,
+          from,
+          to,
+          priceScale,
+        });
+        if (!preflight.canExecute) {
+          throw new StatecraftError({
+            code: "SC_PRECONDITION_FAILED",
+            reason: "withBridge(...).execute(...) preflight failed.",
+            context: preflight,
+            suggestedAction: "Inspect preflight reasons and satisfy requirements before bridge.execute(...).",
+          });
         }
 
         const fromAddress = from ?? config.from ?? src.wallet;
-        if (!fromAddress) {
-          throw new Error(
-            `withBridge(...).execute(...) requires a source recipient: pass \`from\`, configure \`config.from\`, or compose withFundedWallet(...) on source chain "${config.srcChain}".`,
-          );
-        }
-
         const toAddress = to ?? config.to ?? dest.wallet;
-        if (!toAddress) {
-          throw new Error(
-            `withBridge(...).execute(...) requires a destination recipient: pass \`to\`, configure \`config.to\`, or compose withFundedWallet(...) on destination chain "${config.destChain}".`,
-          );
-        }
 
         const amountOut = (amountIn * price) / priceScale;
 
@@ -84,7 +138,7 @@ export function withBridge<C extends ScenarioRuntimeClientsContext>(
           amount: amountOut,
         });
 
-        return {
+        const result = {
           srcChain: config.srcChain,
           destChain: config.destChain,
           fromToken: config.fromToken,
@@ -95,6 +149,22 @@ export function withBridge<C extends ScenarioRuntimeClientsContext>(
           amountOut,
           price,
         };
+        if (idempotencyKey) {
+          executionLedger.set(idempotencyKey, {
+            fingerprint: buildExecutionFingerprint({
+              amountIn,
+              price,
+              from,
+              to,
+              srcChain: config.srcChain,
+              destChain: config.destChain,
+              fromToken: config.fromToken,
+              toToken: config.toToken,
+            }),
+            result,
+          });
+        }
+        return result;
       },
     };
 
@@ -102,6 +172,90 @@ export function withBridge<C extends ScenarioRuntimeClientsContext>(
       ...ctx,
       bridge,
     });
+  }, "withBridge");
+}
+
+function buildExecutionFingerprint(args: {
+  amountIn: bigint;
+  price: bigint;
+  from?: Address;
+  to?: Address;
+  srcChain: string;
+  destChain: string;
+  fromToken: Address;
+  toToken: Address;
+}): string {
+  return [
+    args.srcChain,
+    args.destChain,
+    args.fromToken.toLowerCase(),
+    args.toToken.toLowerCase(),
+    args.from?.toLowerCase() ?? "",
+    args.to?.toLowerCase() ?? "",
+    args.amountIn.toString(),
+    args.price.toString(),
+  ].join("|");
+}
+
+async function preflightBridgeExecution(args: {
+  src: ScenarioChainContext;
+  dest: ScenarioChainContext;
+  config: WithBridgeConfig;
+  amountIn: bigint;
+  price: bigint;
+  from?: Address;
+  to?: Address;
+  priceScale: bigint;
+}): Promise<ActionPreflight> {
+  const reasons: PreflightIssue[] = [];
+  if (args.amountIn < 0n) {
+    reasons.push({
+      code: "BRIDGE_AMOUNT_INVALID",
+      reason: "Bridge amountIn must be non-negative.",
+      context: { amountIn: String(args.amountIn) },
+    });
+  }
+  if (args.price < 0n) {
+    reasons.push({
+      code: "BRIDGE_PRICE_INVALID",
+      reason: "Bridge price must be non-negative.",
+      context: { price: String(args.price) },
+    });
+  }
+
+  const fromAddress = args.from ?? args.config.from ?? args.src.wallet;
+  if (!fromAddress) {
+    reasons.push({
+      code: "BRIDGE_FROM_MISSING",
+      reason: `Missing source recipient for chain "${args.config.srcChain}".`,
+      context: { chain: args.config.srcChain },
+    });
+  }
+
+  const toAddress = args.to ?? args.config.to ?? args.dest.wallet;
+  if (!toAddress) {
+    reasons.push({
+      code: "BRIDGE_TO_MISSING",
+      reason: `Missing destination recipient for chain "${args.config.destChain}".`,
+      context: { chain: args.config.destChain },
+    });
+  }
+
+  return {
+    canExecute: reasons.length === 0,
+    reasons,
+    assumptions: [
+      "Bridge transfer assumes source/destination chain state remains unchanged between preflight and execute.",
+      "Bridge pricing uses integer math amountOut = amountIn * price / priceScale.",
+    ],
+    estimatedEffects: {
+      amountIn: String(args.amountIn),
+      amountOut: String((args.amountIn * args.price) / args.priceScale),
+      srcChain: args.config.srcChain,
+      destChain: args.config.destChain,
+      fromToken: args.config.fromToken,
+      toToken: args.config.toToken,
+    },
   };
 }
 
@@ -112,7 +266,7 @@ async function debitAsset({
   amount,
   label,
 }: {
-  chain: ScenarioRuntimeClientsContext["chains"][string];
+  chain: ScenarioChainContext;
   token: Address;
   owner: Address;
   amount: bigint;
@@ -121,7 +275,12 @@ async function debitAsset({
   if (isNativeToken(token)) {
     const current = await chain.publicClient.getBalance({ address: owner });
     if (current < amount) {
-      throw new Error(`withBridge(...).execute(...) insufficient native ${label} balance: wanted ${amount}, got ${current}.`);
+      throw new StatecraftError({
+        code: "SC_PRECONDITION_FAILED",
+        reason: `withBridge(...).execute(...) insufficient native ${label} balance.`,
+        context: { wanted: String(amount), got: String(current), label },
+        suggestedAction: "Fund the source account or reduce amountIn.",
+      });
     }
     await chain.testClient.setBalance({ address: owner, value: current - amount });
     return;
@@ -135,7 +294,12 @@ async function debitAsset({
   });
 
   if (current < amount) {
-    throw new Error(`withBridge(...).execute(...) insufficient ERC-20 ${label} balance: wanted ${amount}, got ${current}.`);
+    throw new StatecraftError({
+      code: "SC_PRECONDITION_FAILED",
+      reason: `withBridge(...).execute(...) insufficient ERC-20 ${label} balance.`,
+      context: { wanted: String(amount), got: String(current), label, token },
+      suggestedAction: "Seed token balance before execute(...) or reduce amountIn.",
+    });
   }
 
   await dealErc20Balance({
@@ -152,7 +316,7 @@ async function creditAsset({
   owner,
   amount,
 }: {
-  chain: ScenarioRuntimeClientsContext["chains"][string];
+  chain: ScenarioChainContext;
   token: Address;
   owner: Address;
   amount: bigint;

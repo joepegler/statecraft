@@ -8,7 +8,7 @@ description: Inject runtime bytecode at fixed addresses (test-only) with optiona
 **Test runners:** Examples use Vitest `test` and `expect`. `scenario(...)` returns an async function you can pass to any runner with a similar `test` callback (for example Jest or Node `node:test`).
 
 ### Why it is useful
-Use `withContracts()` when you want fast, deterministic contract setup at known addresses, without running constructors or worrying about deployment ordering.
+Use `withContracts()` when address determinism matters more than constructor semantics, such as patching a dependency contract at a known address or stubbing integration points in a larger workflow.
 
 ### Example
 :::code-group
@@ -20,7 +20,7 @@ import { answerArtifact } from "./config.js";
 const ANSWER_ADDRESS = "0x1000000000000000000000000000000000000001";
 
 test(
-  "runtime bytecode is installed and contract handle exists",
+  "inject dependency bytecode at a fixed address for integration tests",
   scenario(
     withChain(),
     withContracts({
@@ -32,6 +32,9 @@ test(
       },
     }),
     async ({ chains }) => {
+      // In production, this dependency would come from a deployed contract.
+      // In this test, fixed-address injection keeps setup deterministic and
+      // lets your business logic tests skip full deploy pipelines.
       expect(chains?.default.contracts?.answer).toBeTruthy();
     },
   ),
@@ -77,3 +80,4 @@ Managed middleware that installs bytecode, then forwards to `next`.
 
 ### Notes and caveats
 Use `withContracts()` for injecting known runtime bytecode at known addresses. It is optimized for setup speed and deterministic addressing, not for constructor semantics.
+- If constructor args, init routines, or deployment ordering are the thing under test, use `withDeployments()` instead.

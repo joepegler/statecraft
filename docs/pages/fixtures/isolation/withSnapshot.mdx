@@ -3,12 +3,12 @@ title: withSnapshot
 description: Snapshot the runtime before inner steps run, then revert in a finally block.
 ---
 
-## withSnapshot([{ chain }])
+## `withSnapshot([{ chain }])`
 
 **Test runners:** Examples use Vitest `test` and `expect`. `scenario(...)` returns an async function you can pass to any runner with a similar `test` callback (for example Jest or Node `node:test`).
 
 ### Why it is useful
-Use `withSnapshot()` to isolate side effects inside a scenario, so changes made by inner steps are rolled back reliably.
+Use `withSnapshot()` when you need deterministic rollback around mutating steps, especially in suites that reuse one external runtime for speed. It lets you test write-heavy flows while keeping later tests clean.
 
 ### Suite scoped runtimes and `describe`
 If you reuse one running Anvil runtime across multiple tests in a file or `describe` block (for example, by creating the runtime handle in `beforeAll` and attaching it via `withExternalRuntime()`), call `withSnapshot()` inside every `scenario(...)` that should not leak state between tests. This pattern assumes the tests are not running concurrently against the same `runtime` handle.
@@ -19,13 +19,18 @@ import { test, expect } from "vitest";
 import { scenario, withChain, withSnapshot } from "@st8craft/core";
 
 test(
-  "snapshot isolates chain mutations",
+  "rollback local mutation after asserting business logic branch",
   scenario(
     withChain(),
     withSnapshot(),
-    async ({ chains }) => {
-      const ch = chains!.default;
-      expect(await ch.publicClient.getBlockNumber()).toBeGreaterThan(0n);
+    async ({ chains, publicClient }) => {
+      const before = await publicClient.getBlockNumber();
+      await chains!.default.testClient.mine({ blocks: 3 });
+      const after = await publicClient.getBlockNumber();
+
+      // In production, this could be a stateful branch you need to evaluate.
+      // In this test, snapshot isolation ensures temporary mutations are rolled back.
+      expect(after).toBe(before + 3n);
     },
   ),
 );
@@ -80,19 +85,18 @@ describe("shared runtime with snapshot isolation", () => {
       withExternalRuntime({ runtime: handle }),
       withSnapshot(),
       withFundedWallet({ balance: parseEther("1") }),
-      async ({ chains }) => {
-        const ch = chains!.default;
-        const before = await ch.publicClient.getBalance({ address: recipient });
+      async ({ chains, publicClient }) => {
+        const before = await publicClient.getBalance({ address: recipient });
         expect(before).toBe(0n);
 
         // Send ETH to `recipient` from the scenario wallet.
         // Any chain mutation here is rolled back by `withSnapshot()`.
-        await ch.walletClient.sendTransaction({
+        await chains!.default.walletClient.sendTransaction({
           to: recipient,
           value: txValue,
         });
 
-        const after = await ch.publicClient.getBalance({ address: recipient });
+        const after = await publicClient.getBalance({ address: recipient });
         expect(after).toBe(txValue);
       },
     ),
@@ -103,9 +107,8 @@ describe("shared runtime with snapshot isolation", () => {
     scenario(
       withExternalRuntime({ runtime: handle }),
       withSnapshot(),
-      async ({ chains }) => {
-        const ch = chains!.default;
-        const balance = await ch.publicClient.getBalance({ address: recipient });
+      async ({ publicClient }) => {
+        const balance = await publicClient.getBalance({ address: recipient });
         expect(balance).toBe(0n);
       },
     ),
@@ -119,3 +122,4 @@ Managed lifecycle, it snapshots before `next` and reverts afterward via a `final
 ### Notes and caveats
 - Nesting multiple `withSnapshot()` layers creates nested snapshot scopes.
 - When reusing one `runtime` handle via `withExternalRuntime()`, avoid concurrent tests that mutate chain state, since `withSnapshot()` relies on snapshot and revert ordering.
+- A common pattern is to keep a suite-scoped runtime warm for speed, then wrap only mutating scenarios with `withSnapshot()` to protect unrelated tests.

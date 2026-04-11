@@ -5,7 +5,8 @@ description: Expose a deterministic bridge simulator callback and let the test c
 
 ## withBridge(config)
 
-`withBridge` is a test-double helper for multi-chain scenarios. It does not auto-run. Instead, it exposes `ctx.bridge.execute(...)` so the test decides exactly when to simulate a bridge transfer. You can wrap it with `vi.fn(...)` to assert integration points while still mutating balances across chains.
+### Why it is useful
+Use `withBridge()` to simulate deterministic bridge transfers inside tests without needing a real bridge integration, relayer queue, or asynchronous settlement service. The fixture injects a callable bridge test-double (`ctx.bridge`) and lets your test control the exact execution moment, which is useful when the business logic depends on a bridge quote or fulfilled transfer but the infra itself is not what you want to exercise.
 
 Use this alongside [`withMultiChain`](/fixtures/runtime/withMultiChain) and chain-targeted wallet setup.
 
@@ -16,7 +17,7 @@ import { parseEther } from "viem";
 import { scenario, withBridge, withFundedWallet, withMultiChain, NATIVE_TOKEN_ADDRESS } from "@st8craft/core";
 
 test(
-  "simulate bridge at a chosen test step",
+  "test a relay-backed transfer without waiting on real bridge infra",
   scenario(
     withMultiChain({
       src: { type: "chain", chainId: 31_337 },
@@ -34,33 +35,84 @@ test(
       const src = chains!.src;
       const dest = chains!.dest;
       const executeBridge = vi.fn(bridge!.execute);
+      const relay = {
+        submit: vi.fn(async () => ({ relayTransferId: "relay-1", quotedPrice: 1n })),
+      };
 
       expect(await src.publicClient.getBalance({ address: src.wallet! })).toBe(parseEther("2"));
 
-      const bridgePromise = executeBridge({ amountIn: parseEther("1"), price: 1n });
+      // In production, your app would submit to a bridge or relayer and wait
+      // for settlement on the destination chain.
+      // In this test, Statecraft lets you jump straight to deterministic
+      // fulfillment with `bridge.execute(...)` so you can assert your app logic.
+      const quote = await relay.submit();
+      const bridgePromise = executeBridge({
+        amountIn: parseEther("1"),
+        price: quote.quotedPrice,
+        idempotencyKey: quote.relayTransferId,
+      });
 
       await vi.waitFor(async () => {
         expect(await dest.publicClient.getBalance({ address: dest.wallet! })).toBe(parseEther("2"));
       });
 
       await bridgePromise;
+      expect(relay.submit).toHaveBeenCalledTimes(1);
       expect(executeBridge).toHaveBeenCalledTimes(1);
     },
   ),
 );
 ```
 
-### Config
-- `srcChain`, `destChain`: chain keys from `ctx.chains`.
-- `fromToken`, `toToken`: token addresses. Use `NATIVE_TOKEN_ADDRESS` for native balance.
-- `from`, `to` (optional): default accounts, otherwise the chain wallet for each side.
-- `priceScale` (optional): destination math divisor. `amountOut = amountIn * price / priceScale`.
+### Options
+| Option | Type | Required? | Meaning (units/semantics) | Used for / affects |
+|---|---|---|---|---|
+| `srcChain` | `string` | Yes | Source chain key from `ctx.chains`. | Selects source runtime clients and balance debits. |
+| `destChain` | `string` | Yes | Destination chain key from `ctx.chains`. | Selects destination runtime clients and balance credits. |
+| `fromToken` | `Address` | Yes | Source asset address, or `NATIVE_TOKEN_ADDRESS` for native token semantics. | Asset debited on source chain. |
+| `toToken` | `Address` | Yes | Destination asset address, or `NATIVE_TOKEN_ADDRESS` for native token semantics. | Asset credited on destination chain. |
+| `from` | `Address` | No | Default source account; falls back to `ctx.chains[srcChain].wallet`. | Default sender for `bridge.execute(...)`. |
+| `to` | `Address` | No | Default destination account; falls back to `ctx.chains[destChain].wallet`. | Default receiver for `bridge.execute(...)`. |
+| `priceScale` | `bigint` | No | Divisor in bridge pricing formula; defaults to `1n`. `amountOut = amountIn * price / priceScale`. | Controls integer conversion math in preflight + execute. |
 
 ### Execute args
 - `amountIn`: source debit amount.
 - `price`: conversion price used for destination amount.
 - `from`, `to` (optional): per-call address overrides.
+- `idempotencyKey` (optional): replay key for safe retries with identical payload.
 
-### Notes
+### Preflight
+
+`ctx.bridge.preflight(args)` returns:
+
+- `canExecute`
+- `reasons[]`
+- `assumptions[]`
+- `estimatedEffects`
+
+Use preflight to decide whether to execute or branch to remediation.
+
+### Adds to context
+- `bridge` with:
+- `bridge.preflight(args)`
+- `bridge.execute(args)`
+
+### Context requirements
+- Requires both `srcChain` and `destChain` to already exist on `ctx.chains` (typically via `withMultiChain`, or combined runtime fixtures that create those keys).
+- Requires runtime clients on both chains (`publicClient` and `testClient`) for balance mutation and reads.
+- Only one `withBridge(...)` may be composed per scenario (`ctx.bridge` must be undefined before this step).
+
+### Lifecycle
+This fixture does not start or stop runtimes. It creates a deterministic in-memory bridge executor for the scenario context and delegates all state mutation to already-available chain clients.
+
+### Retry safety
+
+- If `idempotencyKey` is provided, identical replays return the cached execution result.
+- Reusing the same key with a different payload throws `SC_CONSTRAINT_VIOLATION`.
+- Without `idempotencyKey`, retries are not replay-safe.
+
+### Notes and caveats
 - This is test-only behavior that mutates local or forked test state.
 - The fixture does not attempt to model real bridge messaging or relayer behavior.
+- Use it to test the logic around quoting, pending settlement, retries, and final balances, not to validate a real third-party bridge's production guarantees.
+- Failure codes are structured (`SC_PRECONDITION_FAILED`, `SC_CONTEXT_MISSING`, `SC_CONSTRAINT_VIOLATION`).

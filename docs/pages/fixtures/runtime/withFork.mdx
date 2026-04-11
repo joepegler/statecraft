@@ -8,26 +8,40 @@ description: Start a local Anvil fork from a remote JSON-RPC endpoint at a pinne
 **Test runners:** Examples use Vitest `test` and `expect`. `scenario(...)` returns an async function you can pass to any runner with a similar `test` callback (for example Jest or Node `node:test`).
 
 ### Why it is useful
-Use `withFork()` to test against pinned, deterministic mainnet (or L2) state while still running locally via Anvil.
+Use `withFork()` when your test depends on real deployed contracts or historical chain state, but you still want a deterministic local environment. It is a good fit for reproducing production bugs, validating integrations against canonical token or protocol addresses, and freezing a tricky block so the test stays stable.
 
 ### Example
 ```ts twoslash [index.ts]
 import { test, expect } from "vitest";
+import { erc20Abi, parseUnits } from "viem";
 import { scenario, withFork, withFundedWallet } from "@st8craft/core";
 
+const USDC = "0xA0b86991c6218b36c1d19D4a2e9Eb0ce3606eB48";
+
 test(
-  "funded wallet on pinned mainnet fork",
+  "freeze a mainnet checkout dependency at a pinned block",
   scenario(
     withFork({
       rpcUrl: process.env.VITE_RPC_URL!,
       blockNumber: 22_000_000n,
     }),
     withFundedWallet({ balance: 1n }),
-    async ({ chains }) => {
-      const ch = chains!.default;
-      expect(
-        await ch.publicClient.getBalance({ address: ch.wallet! }),
-      ).toBe(1n);
+    async ({ chains, publicClient }) => {
+      const buyer = chains!.default.walletClient.account!.address;
+      const cartTotal = parseUnits("20", 6);
+
+      // In production, your checkout flow would read the live USDC contract.
+      // In this test, the fork pins that dependency to one reproducible block
+      // so you can debug the business rule without chasing moving chain state.
+      const buyerUsdcBalance = await publicClient.readContract({
+        address: USDC,
+        abi: erc20Abi,
+        functionName: "balanceOf",
+        args: [buyer],
+      });
+
+      expect(await publicClient.getBytecode({ address: USDC })).toBeTruthy();
+      expect(buyerUsdcBalance < cartTotal).toBe(true);
     },
   ),
 );
@@ -51,6 +65,10 @@ Under `ctx.chains[chainKey]` (default key `default`):
 - `walletClient`
 - `testClient`
 
+Top-level convenience aliases:
+- `publicClient` (primary chain client)
+- `altPublicClient` (secondary chain client when one exists)
+
 ### Context requirements
 None beyond being able to reach `rpcUrl` when you run tests.
 
@@ -59,4 +77,5 @@ Managed lifecycle, the fixture starts and stops Anvil for the scenario.
 
 ### Notes and caveats
 - Prefer pinned `blockNumber` values for determinism.
-- This fixture is intended for compatible local/forked runtimes (Anvil-style). 
+- This fixture is intended for compatible local/forked runtimes (Anvil-style).
+- Forking gives you real remote state at a fixed block, but any extra balances or writes you add in the scenario are still local test-time mutations.

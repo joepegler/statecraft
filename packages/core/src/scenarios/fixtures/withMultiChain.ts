@@ -1,6 +1,9 @@
 import { createClients, type CreateClientsOptions } from "../../clients/index.js";
 import { startRuntime, stopRuntime, type RuntimeHandle, type RuntimeMode } from "../../runtime/index.js";
 import type { ScenarioChainContext, ScenarioContext, ScenarioRuntimeClientsContext, ScenarioStep } from "../types.js";
+import { assertTwoChainLimit, resolvePublicClientAliases, type PublicClientAliasPolicy } from "../utils.js";
+import { StatecraftError } from "../errors.js";
+import { labelScenarioStep } from "../stepMeta.js";
 
 /**
  * One chain entry for {@link withMultiChain}: either a fresh chain, a pinned fork, or an external runtime.
@@ -33,16 +36,35 @@ export type WithMultiChainEntry =
  * Map of chain key → chain spec. Keys become `ctx.chains.<key>`.
  */
 export type WithMultiChainConfig = Record<string, WithMultiChainEntry>;
+export type WithMultiChainOptions = {
+  /** Policy for deriving top-level `publicClient`/`altPublicClient` aliases from `ctx.chains`. */
+  publicClientAliasPolicy?: PublicClientAliasPolicy;
+};
 
 /**
  * Middleware: starts or attaches multiple chain runtimes, wires viem clients under `ctx.chains`, runs `next`,
  * then stops only runtimes this fixture started (external entries are not stopped).
  */
-export function withMultiChain(config: WithMultiChainConfig): ScenarioStep<ScenarioContext, ScenarioRuntimeClientsContext> {
-  return async (ctx, next) => {
+export function withMultiChain(
+  config: WithMultiChainConfig,
+  options: WithMultiChainOptions = {},
+): ScenarioStep<ScenarioContext, ScenarioRuntimeClientsContext> {
+  return labelScenarioStep(async (ctx, next) => {
     const keys = Object.keys(config);
     if (keys.length === 0) {
-      throw new Error("withMultiChain(...) requires at least one chain entry.");
+      throw new StatecraftError({
+        code: "SC_PRECONDITION_FAILED",
+        reason: "withMultiChain(...) requires at least one chain entry.",
+        suggestedAction: "Provide one or two chain entries.",
+      });
+    }
+    if (keys.length > 2) {
+      throw new StatecraftError({
+        code: "SC_CONSTRAINT_VIOLATION",
+        reason: "withMultiChain(...) supports at most two chain entries.",
+        context: { chainCount: keys.length },
+        suggestedAction: "Split this workflow into separate scenarios.",
+      });
     }
 
     const sortedKeys = [...keys].sort();
@@ -57,7 +79,12 @@ export function withMultiChain(config: WithMultiChainConfig): ScenarioStep<Scena
           continue;
         }
         if (chains[key]) {
-          throw new Error(`withMultiChain(...) duplicate chain key "${key}".`);
+          throw new StatecraftError({
+            code: "SC_CONSTRAINT_VIOLATION",
+            reason: `withMultiChain(...) duplicate chain key "${key}".`,
+            context: { chainKey: key },
+            suggestedAction: "Ensure each chain key is unique.",
+          });
         }
 
         if (entry.type === "chain") {
@@ -78,10 +105,20 @@ export function withMultiChain(config: WithMultiChainConfig): ScenarioStep<Scena
           };
         } else if (entry.type === "fork") {
           if (!entry.rpcUrl) {
-            throw new Error(`withMultiChain(...) chain "${key}" (fork) requires rpcUrl.`);
+            throw new StatecraftError({
+              code: "SC_PRECONDITION_FAILED",
+              reason: `withMultiChain(...) chain "${key}" (fork) requires rpcUrl.`,
+              context: { chainKey: key },
+              suggestedAction: "Provide rpcUrl for fork entries.",
+            });
           }
           if (entry.blockNumber === undefined) {
-            throw new Error(`withMultiChain(...) chain "${key}" (fork) requires a pinned blockNumber.`);
+            throw new StatecraftError({
+              code: "SC_PRECONDITION_FAILED",
+              reason: `withMultiChain(...) chain "${key}" (fork) requires a pinned blockNumber.`,
+              context: { chainKey: key },
+              suggestedAction: "Provide pinned blockNumber for deterministic fork entries.",
+            });
           }
           const runtime = await startRuntime({
             mode: "fork",
@@ -113,9 +150,13 @@ export function withMultiChain(config: WithMultiChainConfig): ScenarioStep<Scena
         }
       }
 
+      assertTwoChainLimit(chains);
+      const { publicClient, altPublicClient } = resolvePublicClientAliases(chains, options.publicClientAliasPolicy);
       await next({
         ...ctx,
         chains,
+        publicClient,
+        altPublicClient,
       });
     } catch (error) {
       pipelineError = error;
@@ -137,5 +178,5 @@ export function withMultiChain(config: WithMultiChainConfig): ScenarioStep<Scena
         throw new AggregateError(errors, "withMultiChain(...) failed and one or more runtimes also failed to stop.");
       }
     }
-  };
+  }, "withMultiChain");
 }

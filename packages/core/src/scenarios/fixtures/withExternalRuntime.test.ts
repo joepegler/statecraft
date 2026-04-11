@@ -25,6 +25,8 @@ describe("withExternalRuntime", () => {
     expect(ch.publicClient).toBeDefined();
     expect(ch.walletClient).toBeDefined();
     expect(ch.testClient).toBeDefined();
+    expect(ctx.publicClient).toBe(ch.publicClient);
+    expect(ctx.altPublicClient).toBeUndefined();
   });
 
   test("does not stop runtime lifecycle", async () => {

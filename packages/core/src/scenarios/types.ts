@@ -1,5 +1,6 @@
 import type { RuntimeHandle, RuntimeMode } from "../runtime/index.js";
 import type { BundlerClient } from "../clients/index.js";
+import type { ActionPreflight } from "./actions.js";
 import type {
   PublicClient,
   WalletClient,
@@ -98,6 +99,10 @@ export type ScenarioChainContext = {
  */
 export type ScenarioContext = {
   chains?: Record<string, ScenarioChainContext>;
+  /** Primary chain public client. Defaults to `chains.default.publicClient` when present. */
+  publicClient?: ScenarioChainContext["publicClient"];
+  /** Optional secondary chain public client (multi-chain convenience alias). */
+  altPublicClient?: ScenarioChainContext["publicClient"] | undefined;
   bridge?: ScenarioBridge;
 };
 
@@ -106,19 +111,67 @@ export type ScenarioContext = {
  */
 export type ScenarioRuntimeClientsContext = ScenarioContext & {
   chains: Record<string, ScenarioChainContext>;
+  publicClient: ScenarioChainContext["publicClient"];
+  altPublicClient?: ScenarioChainContext["publicClient"] | undefined;
 };
+
+type UpsertChainContext<
+  Ctx extends ScenarioRuntimeClientsContext,
+  ChainKey extends string,
+  ChainPatch extends object,
+> = Omit<Ctx, "chains" | "bridge"> & {
+  bridge?: Exclude<Ctx["bridge"], undefined>;
+  chains: Omit<Ctx["chains"], ChainKey> & Record<ChainKey, ScenarioChainContext & ChainPatch>;
+};
+
+/**
+ * Context helper for fixtures that guarantee `wallet` on one chain.
+ */
+export type ScenarioWalletOnChainContext<
+  Ctx extends ScenarioRuntimeClientsContext,
+  ChainKey extends string,
+> = UpsertChainContext<Ctx, ChainKey, { wallet: Hex }>;
+
+/**
+ * Context helper for fixtures that guarantee `contracts` on one chain.
+ */
+export type ScenarioContractsOnChainContext<
+  Ctx extends ScenarioRuntimeClientsContext,
+  ChainKey extends string,
+> = UpsertChainContext<Ctx, ChainKey, { contracts: ScenarioContracts }>;
+
+/**
+ * Context helper for fixtures that guarantee `deployments` on one chain.
+ */
+export type ScenarioDeploymentsOnChainContext<
+  Ctx extends ScenarioRuntimeClientsContext,
+  ChainKey extends string,
+> = UpsertChainContext<Ctx, ChainKey, { deployments: Record<string, DeploymentRecord> }>;
+
+/**
+ * Context helper for fixtures that guarantee bundler fields on one chain.
+ */
+export type ScenarioBundlerOnChainContext<
+  Ctx extends ScenarioRuntimeClientsContext,
+  ChainKey extends string,
+> = UpsertChainContext<Ctx, ChainKey, {
+  bundlerUrl: string;
+  bundlerClient: BundlerClient;
+  entryPoint: Address;
+}>;
 
 /**
  * Context after {@link withFundedWallet}: the targeted chain entry includes `wallet`. Prefer reading `ctx.chains[chain].wallet`.
  */
-export type ScenarioFundedWalletContext<ChainKey extends string = "default"> = ScenarioRuntimeClientsContext & {
-  chains: ScenarioRuntimeClientsContext["chains"] & Record<ChainKey, ScenarioChainContext & { wallet: Hex }>;
-};
+export type ScenarioFundedWalletContext<ChainKey extends string = "default"> = ScenarioWalletOnChainContext<
+  ScenarioRuntimeClientsContext,
+  ChainKey
+>;
 
 /**
  * Context after {@link withBundler}: the targeted chain entry includes bundler fields.
  */
-export type ScenarioBundlerContext = ScenarioRuntimeClientsContext;
+export type ScenarioBundlerContext = ScenarioBundlerOnChainContext<ScenarioRuntimeClientsContext, "default">;
 
 /**
  * @deprecated Use {@link ScenarioBundlerContext}. Kept as a compatibility alias for older imports.
@@ -165,6 +218,8 @@ export type BridgeExecuteArgs = {
   from?: Address;
   /** Optional destination account override for this execution. */
   to?: Address;
+  /** Optional idempotency key used by bridge execution ledgers. */
+  idempotencyKey?: string;
 };
 
 /**
@@ -186,6 +241,7 @@ export type BridgeExecution = {
  * Callable bridge test-double exposed to tests through scenario context.
  */
 export type ScenarioBridge = {
+  preflight(args: BridgeExecuteArgs): Promise<ActionPreflight>;
   execute(args: BridgeExecuteArgs): Promise<BridgeExecution>;
 };
 

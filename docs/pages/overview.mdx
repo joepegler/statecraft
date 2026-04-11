@@ -38,10 +38,9 @@ test(
   scenario(
     withChain(),
     withFundedWallet({ balance: parseEther("1") }),
-    async ({ chains }) => {
-      const ch = chains!.default;
-      const balance = await ch.publicClient.getBalance({
-        address: ch.wallet!,
+    async ({ chains, publicClient }) => {
+      const balance = await publicClient.getBalance({
+        address: chains!.default.walletClient.account!.address,
       });
       expect(balance).toBe(parseEther("1"));
     },
@@ -50,6 +49,12 @@ test(
 ```
 
 This is the same pattern you will reuse for forks, deployments, token seeding, and isolation. To move from local to a pinned mainnet state, swap `withChain()` for `withFork({ rpcUrl, blockNumber })`.
+
+This first snippet is intentionally minimal. For realistic scenario-style examples (relay settlement, impersonated protocol actors, constructor-aware deployments, and rollback isolation), jump to:
+- [withBridge](/fixtures/runtime/withBridge)
+- [withImpersonation](/fixtures/wallets/withImpersonation)
+- [withDeployments](/fixtures/contracts/withDeployments)
+- [withSnapshot](/fixtures/isolation/withSnapshot)
 
 ## Why this beats ad hoc setup
 
@@ -69,9 +74,20 @@ As a rule of thumb, you should be able to read a test and answer "what state doe
 
 ## Type safety in practice
 
-Because TypeScript understands the fixture order, it can infer which fields are available in your `async ({ ... })` callback. In the example above, `chains.default` includes viem clients after `withChain()`, and `chains.default.wallet` after `withFundedWallet()`.
+Because TypeScript understands the fixture order, it can infer which fields are available in your `async ({ ... })` callback. In the example above, `publicClient` is available after `withChain()`, and `chains.default.walletClient.account.address` is available after `withFundedWallet()` on that chain.
 
 If you write custom fixtures, use `requireContext` to fail fast when a step expects keys that are not present.
+
+## Agent-first contracts
+
+Statecraft exposes explicit machine-facing contracts for autonomous workflows:
+
+- structured `StatecraftError` values with `code`, `reason`, `context`, and `suggestedAction`
+- explicit constraints via `describeScenarioConstraints()`
+- preflight and execution primitives (`planCall`, `simulateCall`, `planDeployment`, `simulateDeployment`, `executePlan`)
+- optional step-level run hooks in `scenario(...)` for deterministic traces
+
+For strict API contracts and error tables, see [Core API (Agent)](/core-api-agent).
 
 ## Lifecycle terminology (when it matters)
 

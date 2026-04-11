@@ -1,9 +1,9 @@
 import { createWalletClient, http, type Address, type Hex } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import type {
-  ScenarioFundedWalletContext,
   ScenarioRuntimeClientsContext,
   ScenarioStep,
+  ScenarioWalletOnChainContext,
 } from "../types.js";
 import { dealErc20Balance } from "../internal/dealErc20Balance.js";
 import { requireChainScopedRuntimeClients } from "../utils.js";
@@ -37,15 +37,24 @@ export type WithFundedWalletConfig = {
  */
 export function withFundedWallet(
   config: WithFundedWalletConfig & { chain?: undefined },
-): ScenarioStep<ScenarioRuntimeClientsContext, ScenarioFundedWalletContext<"default">>;
-export function withFundedWallet<C extends string>(
+): ScenarioStep<
+  ScenarioRuntimeClientsContext,
+  ScenarioWalletOnChainContext<ScenarioRuntimeClientsContext, "default">
+>;
+export function withFundedWallet<Ctx extends ScenarioRuntimeClientsContext, C extends string>(
   config: WithFundedWalletConfig & { chain: C },
-): ScenarioStep<ScenarioRuntimeClientsContext, ScenarioFundedWalletContext<C>>;
+): ScenarioStep<Ctx, ScenarioWalletOnChainContext<Ctx, C>>;
+export function withFundedWallet<Ctx extends ScenarioRuntimeClientsContext>(
+  config: WithFundedWalletConfig & { chain?: undefined },
+): ScenarioStep<Ctx, ScenarioWalletOnChainContext<Ctx, "default">>;
 export function withFundedWallet(
   config: WithFundedWalletConfig,
-): ScenarioStep<ScenarioRuntimeClientsContext, ScenarioRuntimeClientsContext> {
+): ScenarioStep<any, any> {
   const chainKey = config.chain ?? "default";
-  return async (ctx, next) => {
+  return async (
+    ctx: ScenarioRuntimeClientsContext,
+    next: (ctx: ScenarioRuntimeClientsContext) => Promise<void>,
+  ) => {
     requireChainScopedRuntimeClients(ctx, chainKey);
     const ch = ctx.chains[chainKey]!;
 

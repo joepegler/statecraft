@@ -6,6 +6,7 @@ import { spawn, type ChildProcessByStdio } from "node:child_process";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import type { Address } from "viem";
+import { StatecraftError } from "../errors.js";
 
 export type StartBundlerResult = {
   bundlerUrl: string;
@@ -31,7 +32,11 @@ function getAvailablePort(): Promise<number> {
       const address = server.address();
       server.close(() => {
         if (!address || typeof address === "string") {
-          reject(new Error("Failed to allocate a local port for bundler."));
+          reject(new StatecraftError({
+            code: "SC_RUNTIME_PORT_ALLOCATION_FAILED",
+            reason: "Failed to allocate a local port for bundler.",
+            suggestedAction: "Retry startup or free local ports before starting the bundler.",
+          }));
           return;
         }
         resolvePort(address.port);
@@ -95,7 +100,12 @@ function resolveAltoCliPath(): string {
     const message =
       `withBundler({ mode: "alto" }) requires "@pimlico/alto" to be installed in your project. ` +
       `Install it (for example, \`bun add -D @pimlico/alto\`) and ensure it is resolvable from your test runner.`;
-    throw new Error(message, { cause: err as any });
+    throw new StatecraftError({
+      code: "SC_PRECONDITION_FAILED",
+      reason: message,
+      suggestedAction: "Install @pimlico/alto as a dev dependency and re-run tests.",
+      cause: err,
+    });
   }
 
   const resolvedPath = resolved.startsWith("file:")
@@ -145,10 +155,60 @@ async function waitForListening(process: ChildProcessByStdio<null, any, any>, ti
   });
 }
 
+async function waitForBundlerJsonRpcReady(args: { bundlerUrl: string; timeoutMs: number }): Promise<void> {
+  const startedAt = Date.now();
+  let lastError: string | undefined;
+  while (Date.now() - startedAt < args.timeoutMs) {
+    let controllerTimeout: ReturnType<typeof setTimeout> | undefined;
+    try {
+      const controller = new AbortController();
+      controllerTimeout = setTimeout(() => controller.abort(), 500);
+      const response = await fetch(args.bundlerUrl, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        signal: controller.signal,
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: 1,
+          method: "eth_supportedEntryPoints",
+          params: [],
+        }),
+      });
+      clearTimeout(controllerTimeout);
+      if (response.ok) {
+        const payload = await response.json() as { result?: unknown; error?: unknown };
+        if (payload.result !== undefined) {
+          return;
+        }
+        if (payload.error !== undefined) {
+          lastError = JSON.stringify(payload.error);
+        }
+      } else {
+        lastError = `HTTP ${response.status}`;
+      }
+    } catch (error) {
+      if (controllerTimeout) clearTimeout(controllerTimeout);
+      lastError = error instanceof Error ? error.message : String(error);
+    }
+    await new Promise((resolve) => setTimeout(resolve, 150));
+  }
+  throw new StatecraftError({
+    code: "SC_BUNDLER_START_FAILED",
+    reason: "Bundler JSON-RPC endpoint did not become ready in time.",
+    context: {
+      bundlerUrl: args.bundlerUrl,
+      timeoutMs: args.timeoutMs,
+      lastError,
+    },
+    suggestedAction: "Inspect Alto startup logs and config for startup issues.",
+  });
+}
+
 export async function startBundler(args: {
   rpcUrl: string;
   entryPoint: Address;
   // Optional stable id could be wired later into temp dirs.
+  startupTimeoutMs?: number;
 }): Promise<StartBundlerResult> {
   const port = await getAvailablePort();
   const bundlerUrl = `http://127.0.0.1:${port}`;
@@ -167,11 +227,24 @@ export async function startBundler(args: {
   });
 
   try {
-    await waitForListening(child, 12_000);
+    await waitForListening(child, args.startupTimeoutMs ?? 12_000);
+    await waitForBundlerJsonRpcReady({
+      bundlerUrl,
+      timeoutMs: args.startupTimeoutMs ?? 12_000,
+    });
   } catch (err) {
     child.kill("SIGTERM");
     await rm(configDir, { recursive: true, force: true });
-    throw err;
+    throw new StatecraftError({
+      code: "SC_BUNDLER_START_FAILED",
+      reason: "Failed to start local bundler.",
+      context: {
+        bundlerUrl,
+        configPath,
+      },
+      suggestedAction: "Verify @pimlico/alto is installed and check startup stderr output.",
+      cause: err,
+    });
   }
 
   let stopped = false;

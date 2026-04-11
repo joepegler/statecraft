@@ -182,4 +182,39 @@ describe("withDeployments", () => {
     expect(deployContract).toHaveBeenCalledTimes(1);
     expect(waitForTransactionReceipt).toHaveBeenCalledTimes(1);
   });
+
+  test("supports strict preflight mode with machine-readable callback", async () => {
+    const onPreflight = vi.fn();
+    const step = withDeployments({
+      preflightMode: "strict",
+      onPreflight,
+      deployments: {
+        token: {
+          artifact: { abi: [], bytecode: "0x60016000f3" },
+        },
+      },
+    });
+
+    await expect(
+      step(
+        {
+          chains: {
+            default: {
+              chain: { id: 31337 },
+              runtime: { rpcUrl: "http://127.0.0.1:8545" },
+              publicClient: {},
+              walletClient: { account: { address: "0x0000000000000000000000000000000000000001" } },
+              testClient: {},
+            },
+          },
+        } as any,
+        async () => undefined,
+      ),
+    ).rejects.toThrow(/preflight failed/i);
+
+    expect(onPreflight).toHaveBeenCalledTimes(1);
+    expect(onPreflight.mock.calls[0]?.[0]?.result).toMatchObject({
+      canExecute: false,
+    });
+  });
 });

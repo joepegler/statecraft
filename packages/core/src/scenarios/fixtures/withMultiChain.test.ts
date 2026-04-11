@@ -29,6 +29,21 @@ describe("withMultiChain", () => {
     ).rejects.toThrow(/at least one chain entry/i);
   });
 
+  test("throws when config has more than two chain entries", async () => {
+    const { withMultiChain } = await import("./withMultiChain.js");
+    const step = withMultiChain({
+      a: { type: "chain" },
+      b: { type: "chain" },
+      c: { type: "chain" },
+    });
+
+    await expect(
+      step({} as any, async () => {
+        throw new Error("next should not run");
+      }),
+    ).rejects.toThrow(/at most two chain entries/i);
+  });
+
   test("starts two chain runtimes, forwards ctx.chains, and stops both in reverse order", async () => {
     const runtimeA = { rpcUrl: "http://127.0.0.1:8545" };
     const runtimeB = { rpcUrl: "http://127.0.0.1:8546" };
@@ -57,6 +72,8 @@ describe("withMultiChain", () => {
       expect(nextCtx.chains.a.runtimeMode).toBe("chain");
       expect(nextCtx.chains.b.runtime).toBe(runtimeB);
       expect(nextCtx.chains.b.runtimeMode).toBe("chain");
+      expect(nextCtx.publicClient).toBe(clientsA.publicClient);
+      expect(nextCtx.altPublicClient).toBe(clientsB.publicClient);
     });
 
     await step({} as any, next);
@@ -90,6 +107,71 @@ describe("withMultiChain", () => {
         async () => {},
       ),
     ).rejects.toThrow(/duplicate chain key "a"/i);
+  });
+
+  test("prefers default chain as primary alias when present", async () => {
+    const runtimeA = { rpcUrl: "http://127.0.0.1:8545" };
+    const runtimeB = { rpcUrl: "http://127.0.0.1:8546" };
+    const clientsA = {
+      publicClient: { chain: { id: 1 } },
+      walletClient: {},
+      testClient: {},
+    };
+    const clientsB = {
+      publicClient: { chain: { id: 10 } },
+      walletClient: {},
+      testClient: {},
+    };
+
+    startRuntime.mockResolvedValueOnce(runtimeA).mockResolvedValueOnce(runtimeB);
+    createClients.mockReturnValueOnce(clientsA).mockReturnValueOnce(clientsB);
+
+    const { withMultiChain } = await import("./withMultiChain.js");
+    const step = withMultiChain({
+      alt: { type: "chain" },
+      default: { type: "chain" },
+    });
+
+    const next = vi.fn(async (nextCtx: any) => {
+      expect(nextCtx.publicClient).toBe(clientsB.publicClient);
+      expect(nextCtx.altPublicClient).toBe(clientsA.publicClient);
+    });
+
+    await step({} as any, next);
+  });
+
+  test("supports lexical alias policy override", async () => {
+    const runtimeA = { rpcUrl: "http://127.0.0.1:8545" };
+    const runtimeB = { rpcUrl: "http://127.0.0.1:8546" };
+    const clientsA = {
+      publicClient: { chain: { id: 1 } },
+      walletClient: {},
+      testClient: {},
+    };
+    const clientsB = {
+      publicClient: { chain: { id: 10 } },
+      walletClient: {},
+      testClient: {},
+    };
+
+    startRuntime.mockResolvedValueOnce(runtimeA).mockResolvedValueOnce(runtimeB);
+    createClients.mockReturnValueOnce(clientsA).mockReturnValueOnce(clientsB);
+
+    const { withMultiChain } = await import("./withMultiChain.js");
+    const step = withMultiChain(
+      {
+        zeta: { type: "chain" },
+        alpha: { type: "chain" },
+      },
+      { publicClientAliasPolicy: "lexical" },
+    );
+
+    const next = vi.fn(async (nextCtx: any) => {
+      expect(nextCtx.publicClient).toBe(clientsA.publicClient);
+      expect(nextCtx.altPublicClient).toBe(clientsB.publicClient);
+    });
+
+    await step({} as any, next);
   });
 
   test("attempts to stop all owned runtimes even when one stop fails", async () => {

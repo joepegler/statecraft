@@ -9,6 +9,8 @@ description: Seed ERC-20 token balances in local/forked test state with withErc2
 
 Use these fixtures to seed ERC-20 balances in compatible local and forked runtimes (for example, Anvil-style nodes).
 
+This is most useful when token mint mechanics are incidental to the test and you want to start directly from business preconditions like "user has spendable token balance."
+
 ## Fixtures
 
 - [`withErc20Balance({ token, amount[, to] })`](/fixtures/tokens/withErc20Balance)

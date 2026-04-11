@@ -1,6 +1,8 @@
 import { createClients, type CreateClientsOptions } from "../../clients/index.js";
 import type { RuntimeHandle, RuntimeMode } from "../../runtime/index.js";
-import type { ScenarioContext, ScenarioRuntimeClientsContext, ScenarioStep } from "../types.js";
+import type { ScenarioChainContext, ScenarioContext, ScenarioRuntimeClientsContext, ScenarioStep } from "../types.js";
+import { assertTwoChainLimit, resolvePublicClientAliases, type PublicClientAliasPolicy } from "../utils.js";
+import { labelScenarioStep } from "../stepMeta.js";
 
 /**
  * Options for attaching an existing runtime handle to scenario context.
@@ -20,6 +22,8 @@ export type WithExternalRuntimeConfig = {
   runtimeMode?: RuntimeMode;
   /** Optional client wiring overrides (chain identity and signer key). */
   clients?: CreateClientsOptions;
+  /** Policy for deriving top-level `publicClient`/`altPublicClient` aliases from `ctx.chains`. */
+  publicClientAliasPolicy?: PublicClientAliasPolicy;
 };
 
 /**
@@ -30,22 +34,28 @@ export type WithExternalRuntimeConfig = {
  */
 export function withExternalRuntime(config: WithExternalRuntimeConfig): ScenarioStep<ScenarioContext, ScenarioRuntimeClientsContext> {
   const chainKey = config.chainKey ?? "default";
-  return async (ctx, next) => {
+  return labelScenarioStep(async (ctx, next) => {
     const clients = createClients(config.runtime, config.clients);
+    const chainContext: ScenarioChainContext = {
+      runtime: config.runtime,
+      runtimeMode: config.runtimeMode ?? "chain",
+      chain: clients.publicClient.chain,
+      publicClient: clients.publicClient,
+      walletClient: clients.walletClient,
+      testClient: clients.testClient,
+    };
+    const chains: Record<string, ScenarioChainContext> = {
+      ...(ctx.chains ?? {}),
+      [chainKey]: chainContext,
+    };
+    assertTwoChainLimit(chains);
+    const { publicClient, altPublicClient } = resolvePublicClientAliases(chains, config.publicClientAliasPolicy);
 
     await next({
       ...ctx,
-      chains: {
-        ...(ctx.chains ?? {}),
-        [chainKey]: {
-          runtime: config.runtime,
-          runtimeMode: config.runtimeMode ?? "chain",
-          chain: clients.publicClient.chain,
-          publicClient: clients.publicClient,
-          walletClient: clients.walletClient,
-          testClient: clients.testClient,
-        },
-      },
+      chains,
+      publicClient,
+      altPublicClient,
     });
-  };
+  }, "withExternalRuntime");
 }

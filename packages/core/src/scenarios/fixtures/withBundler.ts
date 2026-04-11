@@ -3,8 +3,10 @@ import type { Address } from "viem";
 import { requireChainScopedRuntimeClients } from "../utils.js";
 import type { BundlerClient } from "../../clients/index.js";
 import { createBundlerClient } from "../../clients/index.js";
-import type { ScenarioBundlerContext, ScenarioRuntimeClientsContext, ScenarioStep } from "../types.js";
+import type { ScenarioBundlerOnChainContext, ScenarioRuntimeClientsContext, ScenarioStep } from "../types.js";
 import { startBundler } from "../internal/startBundler.js";
+import { StatecraftError } from "../errors.js";
+import { labelScenarioStep } from "../stepMeta.js";
 
 export type WithBundlerConfig = {
   /** Key on `ctx.chains` (default `default`). */
@@ -24,22 +26,48 @@ const DEFAULT_EXECUTOR_PRIVATE_KEY =
  *
  * Requires `@pimlico/alto` to be installed in the host project (declared as a peer dependency).
  */
-export function withBundler(config: WithBundlerConfig): ScenarioStep<ScenarioRuntimeClientsContext, ScenarioBundlerContext> {
+export function withBundler<Ctx extends ScenarioRuntimeClientsContext>(
+  config: WithBundlerConfig & { chain?: undefined },
+): ScenarioStep<Ctx, ScenarioBundlerOnChainContext<Ctx, "default">>;
+export function withBundler<Ctx extends ScenarioRuntimeClientsContext, C extends string>(
+  config: WithBundlerConfig & { chain: C },
+): ScenarioStep<Ctx, ScenarioBundlerOnChainContext<Ctx, C>>;
+export function withBundler(
+  config: WithBundlerConfig,
+): ScenarioStep<any, any> {
   const chainKey = config.chain ?? "default";
-  return async (ctx, next) => {
+  return labelScenarioStep(async (
+    ctx: ScenarioRuntimeClientsContext,
+    next: (ctx: ScenarioRuntimeClientsContext) => Promise<void>,
+  ) => {
     requireChainScopedRuntimeClients(ctx, chainKey);
     const ch = ctx.chains[chainKey]!;
 
     if (ch.runtimeMode !== "fork") {
-      throw new Error("withBundler(...) requires withFork(...) (or a fork entry in withMultiChain) for that chain first.");
+      throw new StatecraftError({
+        code: "SC_PRECONDITION_FAILED",
+        reason: "withBundler(...) requires withFork(...) (or a fork entry in withMultiChain) for that chain first.",
+        context: { chain: chainKey, runtimeMode: ch.runtimeMode },
+        suggestedAction: "Compose withFork(...) before withBundler(...) for this chain.",
+      });
     }
 
     if (!config?.entryPoint) {
-      throw new Error("withBundler(...) requires `entryPoint`.");
+      throw new StatecraftError({
+        code: "SC_PRECONDITION_FAILED",
+        reason: "withBundler(...) requires `entryPoint`.",
+        context: { chain: chainKey },
+        suggestedAction: "Pass an ERC-4337 entryPoint address to withBundler(...).",
+      });
     }
 
     if (config.mode && config.mode !== "alto") {
-      throw new Error(`withBundler(...) only supports mode='alto'.`);
+      throw new StatecraftError({
+        code: "SC_BUNDLER_UNSUPPORTED_MODE",
+        reason: "withBundler(...) only supports mode='alto'.",
+        context: { requestedMode: config.mode },
+        suggestedAction: "Set mode to 'alto' or omit mode.",
+      });
     }
 
     const executorAccount: PrivateKeyAccount = privateKeyToAccount(DEFAULT_EXECUTOR_PRIVATE_KEY);
@@ -76,5 +104,5 @@ export function withBundler(config: WithBundlerConfig): ScenarioStep<ScenarioRun
     } finally {
       await bundler.stop();
     }
-  };
+  }, "withBundler");
 }

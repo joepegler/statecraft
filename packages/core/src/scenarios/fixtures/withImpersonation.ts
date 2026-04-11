@@ -1,8 +1,8 @@
 import { createWalletClient, http, type Address } from "viem";
 import type {
-  ScenarioFundedWalletContext,
   ScenarioRuntimeClientsContext,
   ScenarioStep,
+  ScenarioWalletOnChainContext,
 } from "../types.js";
 import { requireChainScopedRuntimeClients } from "../utils.js";
 
@@ -28,15 +28,24 @@ export type withImpersonationConfig = {
  */
 export function withImpersonation(
   config: withImpersonationConfig & { chain?: undefined },
-): ScenarioStep<ScenarioRuntimeClientsContext, ScenarioFundedWalletContext<"default">>;
-export function withImpersonation<C extends string>(
+): ScenarioStep<
+  ScenarioRuntimeClientsContext,
+  ScenarioWalletOnChainContext<ScenarioRuntimeClientsContext, "default">
+>;
+export function withImpersonation<Ctx extends ScenarioRuntimeClientsContext, C extends string>(
   config: withImpersonationConfig & { chain: C },
-): ScenarioStep<ScenarioRuntimeClientsContext, ScenarioFundedWalletContext<C>>;
+): ScenarioStep<Ctx, ScenarioWalletOnChainContext<Ctx, C>>;
+export function withImpersonation<Ctx extends ScenarioRuntimeClientsContext>(
+  config: withImpersonationConfig & { chain?: undefined },
+): ScenarioStep<Ctx, ScenarioWalletOnChainContext<Ctx, "default">>;
 export function withImpersonation(
   config: withImpersonationConfig,
-): ScenarioStep<ScenarioRuntimeClientsContext, ScenarioRuntimeClientsContext> {
+): ScenarioStep<any, any> {
   const chainKey = config.chain ?? "default";
-  return async (ctx, next) => {
+  return async (
+    ctx: ScenarioRuntimeClientsContext,
+    next: (ctx: ScenarioRuntimeClientsContext) => Promise<void>,
+  ) => {
     requireChainScopedRuntimeClients(ctx, chainKey);
     const ch = ctx.chains[chainKey]!;
 

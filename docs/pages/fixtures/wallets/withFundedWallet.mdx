@@ -8,7 +8,7 @@ description: Create a funded scenario account, optionally seeding ERC-20 balance
 **Test runners:** Examples use Vitest `test` and `expect`. `scenario(...)` returns an async function you can pass to any runner with a similar `test` callback (for example Jest or Node `node:test`).
 
 ### Why it is useful
-Use `withFundedWallet()` to get a ready-to-sign scenario account and deterministic ETH (and optional ERC-20) balances, so your test body focuses on behavior instead of setup glue code.
+Use `withFundedWallet()` when the scenario needs a known actor and deterministic balances, but managing private keys and funding steps is not the behavior under test. It lets you start from "the user has spendable funds" and go straight to business rules.
 
 ### Example
 ```ts twoslash [index.ts]
@@ -17,15 +17,20 @@ import { parseEther } from "viem";
 import { scenario, withChain, withFundedWallet } from "@st8craft/core";
 
 test(
-  "wallet is funded",
+  "prepare a checkout actor with deterministic spend limits",
   scenario(
     withChain(),
     withFundedWallet({ balance: parseEther("1") }),
-    async ({ chains }) => {
-      const ch = chains!.default;
-      expect(await ch.publicClient.getBalance({ address: ch.wallet! })).toBe(
-        parseEther("1"),
-      );
+    async ({ chains, publicClient }) => {
+      const buyer = chains!.default.walletClient.account!.address;
+      const orderTotal = parseEther("0.4");
+      const buyerBalance = await publicClient.getBalance({ address: buyer });
+
+      // In production, this actor might come from wallet onboarding or test
+      // helpers spread across hooks. In this test, one fixture gives you a
+      // ready signer + funds so you can assert purchase logic immediately.
+      expect(buyerBalance).toBe(parseEther("1"));
+      expect(buyerBalance >= orderTotal).toBe(true);
     },
   ),
 );
@@ -53,3 +58,4 @@ Managed with respect to the wallet setup, this fixture does not start or stop An
 ### Notes and caveats
 - This is test-only state manipulation: it sets balance storage on compatible local/forked runtimes.
 - If you call `withFundedWallet` multiple times for the same `chain` inside the same scenario, the last one wins for `wallet` and `walletClient` on that chain entry.
+- Use `privateKey` when your scenario needs a stable actor identity across tests (for example allowlists, role checks, or deterministic address assertions).
